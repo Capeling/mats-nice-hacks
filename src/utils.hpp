@@ -210,3 +210,91 @@ inline std::string base64_decode(std::string_view str) {
 	free(out);
 	return outs;
 }
+struct clipboard { //thanks geode
+public:
+	static bool write(std::string const& data) {
+		if (!OpenClipboard(nullptr)) return false;
+		if (!EmptyClipboard()) {
+			CloseClipboard();
+			return false;
+		}
+
+		HGLOBAL hg = GlobalAlloc(GMEM_MOVEABLE, data.size() + 1);
+
+		if (!hg) {
+			CloseClipboard();
+			return false;
+		}
+
+		auto dest = GlobalLock(hg);
+
+		if (!dest) {
+			CloseClipboard();
+			return false;
+		}
+
+		memcpy(dest, data.c_str(), data.size() + 1);
+
+		GlobalUnlock(hg);
+
+		SetClipboardData(CF_TEXT, hg);
+		CloseClipboard();
+
+		GlobalFree(hg);
+
+		return true;
+	}
+
+	static std::string read() {
+		if (!OpenClipboard(nullptr)) return "";
+
+		HANDLE hData = GetClipboardData(CF_TEXT);
+		if (hData == nullptr) {
+			CloseClipboard();
+			return "";
+		}
+
+		char* pszText = static_cast<char*>(GlobalLock(hData));
+		if (pszText == nullptr) {
+			CloseClipboard();
+			return "";
+		}
+
+		std::string text(pszText);
+
+		GlobalUnlock(hData);
+		CloseClipboard();
+
+		return text;
+	}
+};
+
+struct ColourUtility {
+	public:
+		static ccColor3B hsvToRgb(const ccHSVValue& hsv) {
+			float hue = hsv.h;
+			float saturation = hsv.s;
+			float value = hsv.v;
+
+			int hi = static_cast<int>(std::floor(hue / 60.0f)) % 6;
+			float f = hue / 60.0f - std::floor(hue / 60.0f);
+
+			float p = value * (1 - saturation);
+			float q = value * (1 - f * saturation);
+			float t = value * (1 - (1 - f) * saturation);
+
+			float r, g, b;
+
+			switch (hi) {
+				case 0: r = value; g = t; b = p; break;
+				case 1: r = q; g = value; b = p; break;
+				case 2: r = p; g = value; b = t; break;
+				case 3: r = p; g = q; b = value; break;
+				case 4: r = t; g = p; b = value; break;
+				case 5: r = value; g = p; b = q; break;
+				default: r = g = b = 0; break;
+			}
+
+			return ccc3(static_cast<uint8_t>(r * 255), static_cast<uint8_t>(g * 255), static_cast<uint8_t>(b * 255));
+		}
+};

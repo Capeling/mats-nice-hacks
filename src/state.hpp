@@ -33,6 +33,9 @@ struct StateStruct {
 	bool smooth_editor_trail = false;
 	bool hide_grid = false;
 
+	float rainbow_speed = 1.f;
+	bool rainbow_color = false;
+
 	bool preview_mode = false;
 	// fixes the piss yellow color u get sometimes
 	// its a 1.9 bug thats fixed in 2.1 however
@@ -50,5 +53,5 @@ DEF_SCHEMA(StateStruct, speed, has_retry_keybind,
 	no_transition, no_trail, no_wave_trail, solid_wave_trail,
 	no_particles, copy_hack, fps_bypass, fps,
 	hide_practice, show_percent, verify_hack,
-	hide_attempts, edit_level, hide_trigger_lines, hide_grid,
+	hide_attempts, edit_level, hide_trigger_lines, hide_grid, rainbow_color, rainbow_speed,
 	smooth_editor_trail, always_fix_hue)

@@ -31,7 +31,7 @@ void render_node_tree(CCNode* node, const size_t index) {
 		const auto children = node->getChildren();
 		// for some reason its nullptr when empty lol
 		if (children) {
-			for (size_t i = 0; i < children->count(); ++i) {
+			for (size_t i = 0; i < node->getChildrenCount(); i++) {
 				render_node_tree(static_cast<CCNode*>(children->objectAtIndex(i)), i);
 			}
 		}
@@ -61,6 +61,10 @@ auto format_addr(void* addr) {
 
 void render_node_properties(CCNode* node) {
 	ImGui::Text("Addr: %p", node);
+	ImGui::SameLine();
+	if(ImGui::Button("Copy")) {
+		clipboard::write(CCString::createWithFormat("%p", node)->getCString());
+	}
 	ImGui::Text("Tag: %d", node->getTag());
 	{
 		auto value = node->getPosition();

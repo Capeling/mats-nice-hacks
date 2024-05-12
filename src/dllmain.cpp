@@ -21,6 +21,9 @@
 #include <cmath>
 #undef isnan
 
+#define MEMBERBYOFFSET(type, class, offset) *reinterpret_cast<type*>(reinterpret_cast<uintptr_t>(class) + offset)
+#define MBO MEMBERBYOFFSET
+
 using namespace matdash;
 
 cc::stdcall<int> FMOD_setVolume(FMOD::Channel* sound, float v) {
@@ -86,8 +89,18 @@ bool PlayLayer_init(PlayLayer* self, GJGameLevel* level) {
 		label->setTag(12345);
 		self->addChild(label);
 	}
+	if(state().hide_attempts) {
+		self->attemptsLabel()->setVisible(false);
+	}
 
 	return true;
+}
+
+auto rgbUpdate = 0.0f;
+
+static ccColor3B getChromaColour()
+{
+	return ColourUtility::hsvToRgb(cchsv((rgbUpdate * 180) / 10.0f, 1.0f, 1.0f, true, true));
 }
 
 cc::thiscall<void> PlayLayer_update(PlayLayer* self, float dt) {
@@ -97,14 +110,30 @@ cc::thiscall<void> PlayLayer_update(PlayLayer* self, float dt) {
 		const auto value = std::min(self->player1()->getPositionX() / self->levelLength(), 1.f) * 100.f;
 		reinterpret_cast<CCLabelBMFont*>(label)->setString(CCString::createWithFormat("%.2f%%", value)->getCString());
 	}
+
+	if (state().rainbow_color) {
+
+		auto player1 = self->player1();
+		auto player2 = self->player2();
+
+		rgbUpdate += dt * state().rainbow_speed;
+
+		for(size_t i = 0; i < player1->getChildrenCount(); i++) {
+			auto node = static_cast<CCSprite*>(player1->getChildren()->objectAtIndex(i));
+			node->setColor(getChromaColour());
+		}
+
+		for(size_t i = 0; i < player2->getChildrenCount(); i++) {
+			auto node = static_cast<CCSprite*>(player2->getChildren()->objectAtIndex(i));
+			node->setColor(getChromaColour());
+		}
+	}
+
 	// sick
 	if (state().hide_player) {
 		self->player1()->setVisible(false);
 		self->player2()->setVisible(false);
 	}
-	// this seems to reset on resetLevel, but im too lazy to go hook that
-	if (state().hide_attempts)
-		self->attemptsLabel()->setVisible(false);
 	
 	return {};
 }
@@ -138,17 +167,9 @@ void EditorPauseLayer_customSetup(EditorPauseLayer* self) {
 	orig<&EditorPauseLayer_customSetup>(self);
 
 	constexpr auto handler = [](CCObject* self, CCObject*) {
-		if (!OpenClipboard(NULL)) return;
-		if (!EmptyClipboard()) return;
-		auto handle = GetClipboardData(CF_TEXT);
-		if (handle) {
-			auto text = static_cast<char*>(GlobalLock(handle));
-			std::string str(text);
-			GlobalUnlock(handle);
-			auto editor = reinterpret_cast<LevelEditorLayer*>(reinterpret_cast<CCNode*>(self)->getParent());
-			editor->editorUI()->pasteObjects(str);
-		}
-		CloseClipboard();
+		auto text = clipboard::read();
+		auto editor = reinterpret_cast<LevelEditorLayer*>(reinterpret_cast<CCNode*>(self)->getParent());
+		editor->editorUI()->pasteObjects(text);
 	};
 
 	auto sprite = ButtonSprite::create("paste string", 0x28, 0, 0.6f, true, "goldFont.fnt", "GJ_button_04.png", 30.0);
@@ -220,6 +241,26 @@ void MenuLayer_onMoreGames(MenuLayer* self, CCObject* sender) {
 	layer->show();
 }
 
+bool LevelSelectLayer_init(LevelSelectLayer* self, int page) {
+	return orig<&LevelSelectLayer_init>(self, page);
+}
+
+static gd::string LevelTools_getAudioTitle(int audioID) {
+	return std::string("hello");
+}
+
+GJGameLevel* LevelTools_getLevel(int levelID, bool __save) {
+	return orig<&LevelTools_getLevel>(levelID, __save);
+}
+
+void PlayerObject_updatePlayerFrame(PlayerObject* self, int frameID) {
+	orig<&PlayerObject_updatePlayerFrame>(self, MBO(int, GameManager::sharedState(), 0x27c));
+}
+
+void PlayerObject_updatePlayerRollFrame(PlayerObject* self, int frameID) {
+	orig<&PlayerObject_updatePlayerRollFrame>(self, frameID);
+}
+
 matdash::cc::c_decl<cocos2d::extension::RGBA> cocos_hsv2rgb(cocos2d::extension::HSV color) {
 	if ((state().should_fix_hue || state().always_fix_hue) && std::isnan(color.h))
 		color.h = 0.0;
@@ -227,7 +268,7 @@ matdash::cc::c_decl<cocos2d::extension::RGBA> cocos_hsv2rgb(cocos2d::extension::
 }
 
 void mod_main(HMODULE) {
-	// static Console console;
+	//static Console console;
 	std::cout << std::boolalpha;
 
 	state().load();
@@ -274,6 +315,14 @@ void mod_main(HMODULE) {
 
 	add_hook<&CustomizeObjectLayer_init>(base + 0x2dc70);
 
+	//add_hook<&PlayerObject_updatePlayerFrame, matdash::Thiscall>(base + 0xdfff0);
+	//add_hook<&PlayerObject_updatePlayerRollFrame, matdash::Thiscall>(base + 0xe0430);
+
+	//add_hook<&LevelSelectLayer_init>(base + 0xa59d0);
+
+	//add_hook<&LevelTools_getAudioTitle>(base + 0xa9ad0);
+	//add_hook<&LevelTools_getLevel>(base + 0xa9280);
+
 	add_hook<&cocos_hsv2rgb>(GetProcAddress(cocos_ext, "?RGBfromHSV@CCControlUtils@extension@cocos2d@@SA?AURGBA@23@UHSV@23@@Z"));
 
 	// add_hook<&MenuLayer_onMoreGames>(base + 0xb0070);
@@ -291,5 +340,5 @@ void mod_main(HMODULE) {
 	patch(base + 0x4779c, { 0xeb });
 	patch(base + 0x477b9, { 0xeb });
 
-	patch(base + 0x4b445, { 0xeb, 0x44 });
+	//patch(base + 0x4b445, { 0xeb, 0x44 });
 }

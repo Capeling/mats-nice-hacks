@@ -47,7 +47,7 @@ void imgui_render() {
 		ImGui::SetNextWindowPos({ border, border });
 		ImGui::SetNextWindowSizeConstraints({0, 0}, {frame_size.width, frame_size.height - border * 2.f});
 
-		if (ImGui::Begin("mat's nice hacks", nullptr,
+		if (ImGui::Begin("mat's nice hacks | capeling fork", nullptr,
 			ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_MenuBar)) {
 			if (ImGui::BeginMenuBar()) {
 				if (ImGui::MenuItem("Explorer"))
@@ -111,6 +111,10 @@ void imgui_render() {
 			}
 			ImGui::Checkbox("Hide attempts", &state().hide_attempts);
 			ImGui::Checkbox("Hide player", &state().hide_player);
+			ImGui::SetNextItemWidth(120.f);
+			ImGui::InputFloat("##rainbowiconspeed", &state().rainbow_speed);
+			ImGui::SameLine();
+			ImGui::Checkbox("Rainbow icon", &state().rainbow_color);
 			ImGui::Checkbox("Editor preview mode", &state().preview_mode);
 			if (ImGui::Checkbox("Edit level", &state().edit_level) || force) {
 				// PauseLayer::init

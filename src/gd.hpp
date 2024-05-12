@@ -69,7 +69,29 @@ class MenuLayer : public CCLayer {
 public:
 };
 
+class LevelTools {
+public:
+	static std::string getAudioTitle(int audioID) {
+		return reinterpret_cast<gd::string(__fastcall*)(int)>(base + 0xa9ad0)(audioID);
+	}
+};
+
 class PlayLayer;
+
+class PremiumPopup;
+
+enum IconType {
+	Cube = 1,
+	Ship = 2,
+	Ball = 3,
+	UFO = 4
+};
+
+class GameRateDelegate;
+
+class LastGameScene;
+
+class LevelSelectLayer;
 
 class GameManager : public CCNode {
 public:
@@ -83,6 +105,7 @@ public:
 
 	bool getShowProgressBar() {
 		return from<bool>(this, 0x1d4);
+		//return m_showProgressBar;
 	}
 
 	int getPlayerColor() {
@@ -93,6 +116,14 @@ public:
 		return from<int>(this, 0x1c4);
 	}
 
+	int getPlayerFrame() {
+		return from<int>(this, 0x15c);
+	}
+	
+	int getPlayerBall() {
+		return from<int>(this, 0x294);
+	}
+
 	cocos2d::ccColor3B colorForIdx(int colorID) {
 		cocos2d::ccColor3B out;
 		reinterpret_cast<cocos2d::ccColor3B*(__thiscall*)(GameManager*, cocos2d::ccColor3B*, int)>(base + 0x6a410)(this, &out, colorID);
@@ -101,6 +132,7 @@ public:
 };
 
 class PlayerObject;
+
 
 class PlayLayer : public CCLayer {
 public:
@@ -126,6 +158,16 @@ class PlayerObject : public CCSprite {
 public:
 	auto& position() {
 		return from<CCPoint>(this, 0x4a8);
+	}
+	CCSprite* cubePrimary() {
+		return static_cast<CCSprite*>(cubeSecondary()->getParent());
+	}
+	CCSprite* cubeSecondary() {
+		return from<CCSprite*>(this, 0x374);
+	}
+	
+	void updatePlayerGlow() {
+		reinterpret_cast<void(__thiscall*)(PlayerObject*)>(base + 0xdfc80)(this);
 	}
 };
 
