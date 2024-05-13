@@ -137,6 +137,10 @@ public:
 
 class GameObject;
 
+class HardStreak : public CCSprite {
+
+};
+
 class PlayerObject : public CCSprite {
 public:
 	auto& position() {
@@ -147,6 +151,9 @@ public:
 	}
 	CCSprite* cubeSecondary() {
 		return from<CCSprite*>(this, 0x374);
+	}
+	HardStreak* playerStreak() {
+		return from<HardStreak*>(this, 0x368);
 	}
 	void updatePlayerGlow() {
 		reinterpret_cast<void(__thiscall*)(PlayerObject*)>(base + 0xdfc80)(this);

@@ -40,6 +40,10 @@ struct StateStruct {
 
 	bool fps_label = false;
 	bool attempts_label = false;
+	bool cps_label = false;
+
+	bool cps_prefix = false;
+	bool cps_total = false;
 
 	bool preview_mode = false;
 	// fixes the piss yellow color u get sometimes
@@ -59,5 +63,5 @@ DEF_SCHEMA(StateStruct, speed, has_retry_keybind,
 	no_particles, copy_hack, fps_bypass, fps,
 	hide_practice, show_percent, verify_hack,
 	hide_attempts, edit_level, hide_trigger_lines, hide_grid, rainbow_color, rainbow_speed, use_mini_icon,
-	fps_label, attempts_label,
+	fps_label, attempts_label, cps_label, cps_prefix, cps_total,
 	smooth_editor_trail, always_fix_hue)

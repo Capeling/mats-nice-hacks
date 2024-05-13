@@ -62,84 +62,101 @@ void imgui_render() {
 			if (ImGui::Checkbox("Speedhack", &state().speed_hack_enabled))
 				update_speed_hack();
 
-			ImGui::SetNextItemWidth(120);
-			if (ImGui::InputFloat("##fpsbypass", &state().fps))
-				update_fps_bypass();
-			ImGui::SameLine();
-			if (ImGui::Checkbox("FPS bypass", &state().fps_bypass))
-				update_fps_bypass();
+			if(ImGui::TreeNode("Bypass")) {
+				ImGui::SetNextItemWidth(120);
+				if (ImGui::InputFloat("##fpsbypass", &state().fps))
+					update_fps_bypass();
+				ImGui::SameLine();
+				if (ImGui::Checkbox("FPS bypass", &state().fps_bypass))
+					update_fps_bypass();
 
-			ImGui::Checkbox("Retry keybind (R)", &state().has_retry_keybind);
-			if (ImGui::Checkbox("No transition", &state().no_transition) || force) {
-				// patch
-				//   movss dword ptr [esi + 0xf0], xmm0
-				// to
-				//   xor eax, eax
-				//   mov dword ptr [esi + 0xf0], eax
-				patch_toggle(cocos_base + 0xa49a7, { 0x31, 0xc0, 0x89, 0x86, 0xf0, 0x00, 0x00, 0x00 }, state().no_transition);
+				if (ImGui::Checkbox("No transition", &state().no_transition) || force) {
+					// patch
+					//   movss dword ptr [esi + 0xf0], xmm0
+					// to
+					//   xor eax, eax
+					//   mov dword ptr [esi + 0xf0], eax
+					patch_toggle(cocos_base + 0xa49a7, { 0x31, 0xc0, 0x89, 0x86, 0xf0, 0x00, 0x00, 0x00 }, state().no_transition);
+				}
+				if (ImGui::Checkbox("Copy hack", &state().copy_hack) || force) {
+					// LevelInfoLayer::init and LevelInfoLayer::tryClone
+					patch_toggle(base + 0x9c7ed, { 0x90, 0x90, 0x90, 0x90, 0x90, 0x90 }, state().copy_hack);
+					patch_toggle(base + 0x9dfe5, { 0x90, 0x90 }, state().copy_hack);
+				}
+				if (ImGui::Checkbox("Edit level", &state().edit_level) || force) {
+					// PauseLayer::init
+					patch_toggle(base + 0xd62ef, { 0x90, 0x90 }, state().edit_level);
+				}
+				if (ImGui::Checkbox("Verify hack", &state().verify_hack) || force) {
+					// EditLevelLayer::onShare
+					patch_toggle(base + 0x3d760, { 0xeb }, state().verify_hack);
+				}
+				ImGui::TreePop();
 			}
-			if (ImGui::Checkbox("No trail", &state().no_trail) || force) {
-				// CCMotionStreak::draw
-				patch_toggle(cocos_base + 0xac080, { 0xc3 }, state().no_trail);
-			}
-			if (ImGui::Checkbox("No wave trail", &state().no_wave_trail) || force) {
-				// PlayerObject::activateStreak
-				patch_toggle(base + 0xe0d54, { 0xeb }, state().no_wave_trail);
-			}
-			if (ImGui::Checkbox("Solid wave trail", &state().solid_wave_trail) || force) {
-				// PlayerObject::setupStreak
-				patch_toggle(base + 0xd9ade, { 0x90, 0x90 }, state().solid_wave_trail);
-			}
+			if(ImGui::TreeNode("Level")) {
 			if (ImGui::Checkbox("No particles", &state().no_particles) || force) {
 				// CCParticleSystemQuad::draw
 				patch_toggle(cocos_base + 0xb77f0, { 0xc3 }, state().no_particles);
 			}
-			if (ImGui::Checkbox("Copy hack", &state().copy_hack) || force) {
-				// LevelInfoLayer::init and LevelInfoLayer::tryClone
-				patch_toggle(base + 0x9c7ed, { 0x90, 0x90, 0x90, 0x90, 0x90, 0x90 }, state().copy_hack);
-				patch_toggle(base + 0x9dfe5, { 0x90, 0x90 }, state().copy_hack);
+				ImGui::Checkbox("Retry keybind (R)", &state().has_retry_keybind);
+				if (ImGui::Checkbox("Hide practice buttons", &state().hide_practice) || force) {
+					// UILayer::init, replaces two calls with add esp, 4
+					patch_toggle(base + 0xfee29, { 0x83, 0xc4, 0x04, 0x90, 0x90, 0x90 }, state().hide_practice);
+					patch_toggle(base + 0xfee6a, { 0x83, 0xc4, 0x04, 0x90, 0x90, 0x90 }, state().hide_practice);
+				}
+				ImGui::Checkbox("Show percent", &state().show_percent);
+				ImGui::Checkbox("Hide attempts", &state().hide_attempts);
+				ImGui::TreePop();
 			}
-			if (ImGui::Checkbox("Hide practice buttons", &state().hide_practice) || force) {
-				// UILayer::init, replaces two calls with add esp, 4
-				patch_toggle(base + 0xfee29, { 0x83, 0xc4, 0x04, 0x90, 0x90, 0x90 }, state().hide_practice);
-				patch_toggle(base + 0xfee6a, { 0x83, 0xc4, 0x04, 0x90, 0x90, 0x90 }, state().hide_practice);
+			if(ImGui::TreeNode("Player")) {
+				if (ImGui::Checkbox("No trail", &state().no_trail) || force) {
+					// CCMotionStreak::draw
+					patch_toggle(cocos_base + 0xac080, { 0xc3 }, state().no_trail);
+				}
+				if (ImGui::Checkbox("No wave trail", &state().no_wave_trail) || force) {
+					// PlayerObject::activateStreak
+					patch_toggle(base + 0xe0d54, { 0xeb }, state().no_wave_trail);
+				}
+				if (ImGui::Checkbox("Solid wave trail", &state().solid_wave_trail) || force) {
+					// PlayerObject::setupStreak
+					patch_toggle(base + 0xd9ade, { 0x90, 0x90 }, state().solid_wave_trail);
+				}
+				ImGui::Checkbox("Hide player", &state().hide_player);
+				ImGui::SetNextItemWidth(120.f);
+				ImGui::InputFloat("##rainbowiconspeed", &state().rainbow_speed);
+				ImGui::SameLine();
+				ImGui::Checkbox("Rainbow icon", &state().rainbow_color);
+				ImGui::Checkbox("Use mini icon", &state().use_mini_icon);
+				ImGui::TreePop();
 			}
-			ImGui::Checkbox("Show percent", &state().show_percent);
-			if (ImGui::Checkbox("Verify hack", &state().verify_hack) || force) {
-				// EditLevelLayer::onShare
-				patch_toggle(base + 0x3d760, { 0xeb }, state().verify_hack);
+			if(ImGui::TreeNode("Editor")) {
+				ImGui::Checkbox("Editor preview mode", &state().preview_mode);
+				if (ImGui::Checkbox("Hide trigger lines", &state().hide_trigger_lines) || force) {
+					// DrawGridLayer::draw
+					patch_toggle(base + 0x93e08, { 0xE9, 0xCE, 0x00, 0x00, 0x00, 0x90 }, state().hide_trigger_lines);
+				}
+				if (ImGui::Checkbox("Hide grid", &state().hide_grid) || force) {
+					// DrawGridLayer::draw
+					// gets rid of the line at the start and the ground line but oh well 
+					// setting the opacity to 0 didnt work if u zoomed in it was weird
+					patch_toggle(base + 0x938a0, { 0xe9, 0x5a, 0x01, 0x00, 0x00, 0x90 }, state().hide_grid);
+					patch_toggle(base + 0x93a4a, { 0xe9, 0x54, 0x01, 0x00, 0x00, 0x90 }, state().hide_grid);
+				}
+				if (ImGui::Checkbox("Smooth editor trail", &state().smooth_editor_trail) || force) {
+					// LevelEditorLayer::update
+					patch_toggle(base + 0x91a34, { 0x90, 0x90 }, state().smooth_editor_trail);
+				}
+				ImGui::Checkbox("Always fix yellow color bug", &state().always_fix_hue);
+				ImGui::TreePop();
 			}
-			ImGui::Checkbox("Hide attempts", &state().hide_attempts);
-			ImGui::Checkbox("Hide player", &state().hide_player);
-			ImGui::SetNextItemWidth(120.f);
-			ImGui::InputFloat("##rainbowiconspeed", &state().rainbow_speed);
-			ImGui::SameLine();
-			ImGui::Checkbox("Rainbow icon", &state().rainbow_color);
-			ImGui::Checkbox("Use mini icon", &state().use_mini_icon);
-			ImGui::Checkbox("Editor preview mode", &state().preview_mode);
-			if (ImGui::Checkbox("Edit level", &state().edit_level) || force) {
-				// PauseLayer::init
-				patch_toggle(base + 0xd62ef, { 0x90, 0x90 }, state().edit_level);
-			}
-			if (ImGui::Checkbox("Hide trigger lines", &state().hide_trigger_lines) || force) {
-				// DrawGridLayer::draw
-				patch_toggle(base + 0x93e08, { 0xE9, 0xCE, 0x00, 0x00, 0x00, 0x90 }, state().hide_trigger_lines);
-			}
-			if (ImGui::Checkbox("Hide grid", &state().hide_grid) || force) {
-				// DrawGridLayer::draw
-				// gets rid of the line at the start and the ground line but oh well 
-				// setting the opacity to 0 didnt work if u zoomed in it was weird
-				patch_toggle(base + 0x938a0, { 0xe9, 0x5a, 0x01, 0x00, 0x00, 0x90 }, state().hide_grid);
-				patch_toggle(base + 0x93a4a, { 0xe9, 0x54, 0x01, 0x00, 0x00, 0x90 }, state().hide_grid);
-			}
-			if (ImGui::Checkbox("Smooth editor trail", &state().smooth_editor_trail) || force) {
-				// LevelEditorLayer::update
-				patch_toggle(base + 0x91a34, { 0x90, 0x90 }, state().smooth_editor_trail);
-			}
-			ImGui::Checkbox("Always fix yellow color bug", &state().always_fix_hue);
 			if(ImGui::TreeNode("Status labels")) {
 				ImGui::Checkbox("FPS label", &state().fps_label);
 				ImGui::Checkbox("Attempts label", &state().attempts_label);
+				ImGui::Checkbox("Cps label", &state().cps_label);
+				ImGui::SameLine();
+				ImGui::Checkbox("Prefix", &state().cps_prefix);
+				ImGui::SameLine();
+				ImGui::Checkbox("Total clicks", &state().cps_total);
 				ImGui::TreePop();
 			}
 		}

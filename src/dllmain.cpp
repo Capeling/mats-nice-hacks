@@ -73,196 +73,12 @@ void EditorUI_ccTouchEnded(EditorUI* self, void* idc, void* idc2) {
 	return orig<&EditorUI_ccTouchEnded>(self, idc, idc2);
 }
 
-void PlayerObject_updatePlayerFrame(PlayerObject* self, int frameID) {
-	if(state().use_mini_icon) return orig<&PlayerObject_updatePlayerFrame>(self, 0);
-	orig<&PlayerObject_updatePlayerFrame>(self, frameID);
-}
-
-void PlayerObject_updatePlayerRollFrame(PlayerObject* self, int frameID) {
-	if(state().use_mini_icon) return orig<&PlayerObject_updatePlayerRollFrame>(self, 0);
-	orig<&PlayerObject_updatePlayerRollFrame>(self, frameID);
-}
-
-void PlayerObject_init(PlayerObject* self, int frame, int type, int idk) {
-	orig<&PlayerObject_init>(self, frame, type, idk);
-	if(state().use_mini_icon) orig<&PlayerObject_updatePlayerFrame>(self, 0);
-}
-
-
-void createFpsLabel(PlayLayer* self) {
-	auto fpsLabel = CCLabelBMFont::create("0", "bigFont.fnt");
-	fpsLabel->setAnchorPoint({0.f, 0.5f});
-	fpsLabel->setScale(0.5f);
-	fpsLabel->setZOrder(999999);
-	fpsLabel->setTag(6969);
-	fpsLabel->setOpacity(255 / 2);
-	reinterpret_cast<CCMenu*>(self->getChildByTag(69))->addChild(fpsLabel);
-}
-
-void createAttemptsLabel(PlayLayer* self) {
-	auto attemptsLabel = CCLabelBMFont::create("Attempt 1", "bigFont.fnt");
-	attemptsLabel->setAnchorPoint({0.f, 0.5f});
-	attemptsLabel->setScale(0.5f);
-	attemptsLabel->setZOrder(999998);
-	attemptsLabel->setTag(6968);
-	attemptsLabel->setOpacity(255 / 2);
-	reinterpret_cast<CCMenu*>(self->getChildByTag(69))->addChild(attemptsLabel);
-}
-
-int labelAmount = 0;
-
-void updateLabels(PlayLayer* self) {
-
-	auto director = CCDirector::sharedDirector();
-
-	auto labelMenu = static_cast<CCMenu*>(self->getChildByTag(69));
-	if(labelMenu) {
-		auto fps_label = labelMenu->getChildByTag(6969);
-		auto attemptsLabel = labelMenu->getChildByTag(6968);
-		if(state().fps_label && !fps_label) {
-			createFpsLabel(self);
-			fps_label = labelMenu->getChildByTag(6969);
-			labelAmount++;
-		}
-
-		if(state().attempts_label && !attemptsLabel) {
-			createAttemptsLabel(self);
-			attemptsLabel = labelMenu->getChildByTag(6968);
-			labelAmount++;
-		}
-		if(fps_label) {
-			fps_label->setZOrder(999999);
-			static_cast<CCLabelBMFont*>(fps_label)->setString(std::to_string(static_cast<int>(ImGui::GetIO().Framerate)).c_str());
-			if(!state().fps_label) {
-				fps_label->removeFromParent();
-				labelAmount--;
-			}
-		}
-		if(attemptsLabel) {
-			int attemptCount = self->attemptsCount();
-			attemptsLabel->setZOrder(999998);
-			if(attemptCount < 1)
-				attemptCount = 1;
-			static_cast<CCLabelBMFont*>(attemptsLabel)->setString(CCString::createWithFormat("Attempt %i", attemptCount)->getCString());
-			if(!state().attempts_label) {
-				attemptsLabel->removeFromParent();
-				labelAmount--;
-			}
-		}
-		labelMenu->setPosition({director->getScreenLeft() + 5.f, director->getScreenTop() - labelAmount * 10});
-		labelMenu->alignItemsVerticallyWithPadding(1.f);
-	}
-}
-
-
-bool PlayLayer_init(PlayLayer* self, GJGameLevel* level) {
-	if (!orig<&PlayLayer_init>(self, level)) return false;
-	labelAmount = 0;
-
-	auto director = CCDirector::sharedDirector();
-	auto winSize = director->getWinSize();
-
-	auto labelMenu = CCMenu::create();
-	labelMenu->setTag(69);
-	labelMenu->setZOrder(999999);
-	self->addChild(labelMenu);
-
-	if(state().fps_label) {
-		createFpsLabel(self);
-		labelAmount++;
-	}
-	if(state().attempts_label) {
-		createAttemptsLabel(self);
-		labelAmount++;
-	}
-
-
-	if (state().show_percent) {
-		auto gm = GameManager::sharedState();
-		const auto bar = gm->getShowProgressBar();
-
-		auto label = CCLabelBMFont::create("0.00%", "bigFont.fnt");
-		label->setAnchorPoint({ bar ? 0.f : 0.5f, 0.5f });
-		label->setScale(0.5f);
-		label->setZOrder(999999);
-		label->setPosition({ winSize.width / 2.f + (bar ? 107.2f : 0.f), winSize.height - 8.f });
-		label->setTag(12345);
-		self->addChild(label);
-	}
-	if(state().hide_attempts) {
-		self->attemptsLabel()->setVisible(false);
-	}
-
-	updateLabels(self);
-
-	return true;
-}
-
-auto rgbUpdate = 0.0f;
-
-static ccColor3B getChromaColour()
-{
-	return ColorUtility::hsvToRgb(cchsv((rgbUpdate * 180) / 10.0f, 1.0f, 1.0f, true, true));
-}
-
-
-void PlayLayer_updateAttempts(PlayLayer* self) {
-	updateLabels(self);
-	orig<&PlayLayer_updateAttempts>(self);
-}
-
-cc::thiscall<void> PlayLayer_update(PlayLayer* self, float dt) {
-	orig<&PlayLayer_update>(self, dt);
-	auto label = self->getChildByTag(12345);
-	if (label) {
-		const auto value = std::min(self->player1()->getPositionX() / self->levelLength(), 1.f) * 100.f;
-		reinterpret_cast<CCLabelBMFont*>(label)->setString(CCString::createWithFormat("%.2f%%", value)->getCString());
-	}
-
-	updateLabels(self);
-
-	if (state().rainbow_color) { //nobody has to know
-
-		auto player1 = self->player1();
-		auto player2 = self->player2();
-
-		auto playerGlowNode = self->playerGlowNode();
-
-		rgbUpdate += dt * state().rainbow_speed;
-
-		for(size_t i = 0; i < player1->getChildrenCount(); i++) {
-			auto node = static_cast<CCSprite*>(player1->getChildren()->objectAtIndex(i));
-			node->setColor(getChromaColour());
-		}
-
-		for(size_t i = 0; i < player2->getChildrenCount(); i++) {
-			auto node = static_cast<CCSprite*>(player2->getChildren()->objectAtIndex(i));
-			for(size_t i = 0; i < node->getChildrenCount(); i++) {
-				auto node2 = static_cast<CCSprite*>(node->getChildren()->objectAtIndex(i));
-				node2->setColor(getChromaColour());
-			}
-		}
-		
-		if(auto player2Glow = static_cast<CCSprite*>(playerGlowNode->getChildren()->objectAtIndex(playerGlowNode->getChildrenCount()))) {
-			for(size_t i = 0; i < player2Glow->getChildrenCount(); i++) {
-				auto node = static_cast<CCSprite*>(player2Glow->getChildren()->objectAtIndex(i));
-				node->setColor(getChromaColour());
-			}
-		};
-	}
-
-	// sick
-	if (state().hide_player) {
-		self->player1()->setVisible(false);
-		self->player2()->setVisible(false);
-	}
-	
-	return {};
-}
-
 bool ColorSelectPopup_init(ColorSelectPopup* self, GameObject* obj, int color_id, int idk, int idk2) {
 	state().should_fix_hue = true;
 	if (!orig<&ColorSelectPopup_init>(self, obj, color_id, idk, idk2)) return false;
+
+	auto director = CCDirector::sharedDirector();
+	auto winSize = director->getWinSize();
 
 	constexpr auto handler = [](CCObject* _self, CCObject* button) {
 		auto self = reinterpret_cast<ColorSelectPopup*>(_self);
@@ -386,6 +202,248 @@ matdash::cc::c_decl<cocos2d::extension::RGBA> cocos_hsv2rgb(cocos2d::extension::
 	return orig<&cocos_hsv2rgb>(color);
 }
 
+void PlayerObject_updatePlayerFrame(PlayerObject* self, int frameID) {
+	if(state().use_mini_icon) return orig<&PlayerObject_updatePlayerFrame>(self, 0);
+	orig<&PlayerObject_updatePlayerFrame>(self, frameID);
+}
+
+void PlayerObject_updatePlayerRollFrame(PlayerObject* self, int frameID) {
+	if(state().use_mini_icon) return orig<&PlayerObject_updatePlayerRollFrame>(self, 0);
+	orig<&PlayerObject_updatePlayerRollFrame>(self, frameID);
+}
+
+bool PlayerObject_init(PlayerObject* self, int frame, int type, int idk) {
+	auto init = orig<&PlayerObject_init>(self, frame, type, idk);
+	if(state().use_mini_icon) orig<&PlayerObject_updatePlayerFrame>(self, 0);
+	return init;
+}
+
+int labelCount = 0;
+float updateRgb = 0.0f;
+
+CCMenu* labelMenu = nullptr;
+
+CCLabelBMFont* fpsLabel = nullptr;
+CCLabelBMFont* attemptsLabel = nullptr;
+CCLabelBMFont* cpsLabel = nullptr;
+
+std::vector<time_t> s_clickFrames;
+int totalClicks = 0;
+
+CCLabelBMFont* createStandardLabel() {
+	auto label = CCLabelBMFont::create("", "bigFont.fnt");
+	label->setAnchorPoint({0.f, 0.5f});
+	label->setScale(0.5f);
+	label->setZOrder(999999);
+	label->setOpacity(255 / 2);
+	labelCount++;
+    return label;
+}
+
+void createFpsLabel(PlayLayer* self) {
+	fpsLabel = createStandardLabel();
+	labelMenu->addChild(fpsLabel);
+}
+
+void createAttemptsLabel(PlayLayer* self) {
+	attemptsLabel = createStandardLabel();
+	labelMenu->addChild(attemptsLabel);
+}
+
+void createCpsLabel(PlayLayer* self) {
+	cpsLabel = createStandardLabel();
+	labelMenu->addChild(cpsLabel);
+}
+
+void updateAttemptLabel(PlayLayer* self) {
+    if(attemptsLabel) {
+        int attemptCount = self->attemptsCount() + 1;
+        attemptsLabel->setString(CCString::createWithFormat("Attempt %i", attemptCount)->getCString());
+    }
+}
+
+void updateLabels(PlayLayer* self) {
+
+	auto director = CCDirector::sharedDirector();
+
+	if(labelMenu) {
+		if(state().fps_label && !fpsLabel) {
+			createFpsLabel(self);
+		}
+
+		if(state().attempts_label && !attemptsLabel) {
+			createAttemptsLabel(self);
+            updateAttemptLabel(self);
+		}
+
+		if(state().cps_label && !cpsLabel) {
+			createCpsLabel(self);
+		}
+
+		if(fpsLabel) {
+			fpsLabel->setString(std::to_string(static_cast<int>(ImGui::GetIO().Framerate)).c_str());
+			if(!state().fps_label) {
+				fpsLabel->removeFromParent();
+				fpsLabel = nullptr;
+				labelCount--;
+			}
+		}
+
+
+        if(cpsLabel) {
+			std::string cpsCurrent = CCString::createWithFormat("%i", s_clickFrames.size())->getCString();
+			std::string cpsTotal = CCString::createWithFormat("/%i", totalClicks)->getCString();
+			std::string prefix = "CPS: ";
+
+			if(!state().cps_prefix) prefix.clear();
+			if(!state().cps_total) cpsTotal.clear();
+
+            cpsLabel->setString(std::string(prefix + cpsCurrent + cpsTotal).c_str());
+			if(!state().cps_label) {
+				cpsLabel->removeFromParent();
+				cpsLabel = nullptr;
+				labelCount--;
+			}
+        }
+
+        if(!state().attempts_label && attemptsLabel) {
+            attemptsLabel->removeFromParent();
+			attemptsLabel = nullptr;
+            labelCount--;
+        }
+		labelMenu->setPosition({director->getScreenLeft() + 5.f, director->getScreenTop() - (labelCount * 10) + labelCount});
+		labelMenu->alignItemsVerticallyWithPadding(1.f);
+	}
+}
+
+void PlayLayer_resetLevel(PlayLayer* self) {
+    s_clickFrames.clear();
+	totalClicks = 0;
+    orig<&PlayLayer_resetLevel>(self);
+}
+
+bool hasClicked = false;
+
+void PlayLayer_pushButton(PlayLayer* self, int idk1, bool idk2) {
+    if (!hasClicked) {
+        s_clickFrames.push_back(time::getTime());
+		totalClicks++;
+        hasClicked = true;
+    }
+    orig<&PlayLayer_pushButton>(self, idk1, idk2);
+}
+
+bool PlayLayer_init(PlayLayer* self, GJGameLevel* level) {
+	if (!orig<&PlayLayer_init>(self, level)) return false;
+	labelCount = 0;
+	totalClicks = 0;
+	s_clickFrames.clear();
+
+	auto director = CCDirector::sharedDirector();
+	auto winSize = director->getWinSize();
+
+	labelMenu = CCMenu::create();
+	labelMenu->setZOrder(999999);
+	self->addChild(labelMenu);
+
+	if(state().fps_label) {
+		createFpsLabel(self);
+	}
+	if(state().cps_label) {
+		createCpsLabel(self);
+	}
+	if(state().attempts_label) {
+		createAttemptsLabel(self);
+		updateAttemptLabel(self);
+	}
+
+
+	if (state().show_percent) {
+		auto gm = GameManager::sharedState();
+		const auto bar = gm->getShowProgressBar();
+
+		auto label = CCLabelBMFont::create("0.00%", "bigFont.fnt");
+		label->setAnchorPoint({ bar ? 0.f : 0.5f, 0.5f });
+		label->setScale(0.5f);
+		label->setZOrder(999999);
+		label->setPosition({ winSize.width / 2.f + (bar ? 107.2f : 0.f), winSize.height - 8.f });
+		label->setTag(12345);
+		self->addChild(label);
+	}
+	if(state().hide_attempts) {
+		self->attemptsLabel()->setVisible(false);
+	}
+
+	updateLabels(self);
+
+	return true;
+}
+
+ccColor3B getChromaColour() {
+	return ColorUtility::hsvToRgb(cchsv((updateRgb * 180) / 10.0f, 1.0f, 1.0f, true, true));
+}
+
+
+void PlayLayer_updateAttempts(PlayLayer* self) {
+	updateAttemptLabel(self);
+	orig<&PlayLayer_updateAttempts>(self);
+}
+
+cc::thiscall<void> PlayLayer_update(PlayLayer* self, float dt) {
+	orig<&PlayLayer_update>(self, dt);
+	auto label = self->getChildByTag(12345);
+	if (label) {
+		const auto value = std::min(self->player1()->getPositionX() / self->levelLength(), 1.f) * 100.f;
+		reinterpret_cast<CCLabelBMFont*>(label)->setString(CCString::createWithFormat("%.2f%%", value)->getCString());
+	}
+
+	updateLabels(self);
+
+	if (state().rainbow_color) { //nobody has to know
+
+		auto player1 = self->player1();
+		auto player2 = self->player2();
+
+		auto playerGlowNode = self->playerGlowNode();
+
+		updateRgb += dt * state().rainbow_speed;
+
+		for(size_t i = 0; i < player1->getChildrenCount(); i++) {
+			auto node = static_cast<CCSprite*>(player1->getChildren()->objectAtIndex(i));
+			node->setColor(getChromaColour());
+		}
+
+		for(size_t i = 0; i < player2->getChildrenCount(); i++) {
+			auto node = static_cast<CCSprite*>(player2->getChildren()->objectAtIndex(i));
+			for(size_t i = 0; i < node->getChildrenCount(); i++) {
+				auto node2 = static_cast<CCSprite*>(node->getChildren()->objectAtIndex(i));
+				node2->setColor(getChromaColour());
+			}
+		}
+		
+		if(auto player2Glow = static_cast<CCSprite*>(playerGlowNode->getChildren()->objectAtIndex(playerGlowNode->getChildrenCount()))) {
+			for(size_t i = 0; i < player2Glow->getChildrenCount(); i++) {
+				auto node = static_cast<CCSprite*>(player2Glow->getChildren()->objectAtIndex(i));
+				node->setColor(getChromaColour());
+			}
+		};
+	}
+
+	// sick
+	if (state().hide_player) {
+		self->player1()->setVisible(false);
+		self->player2()->setVisible(false);
+	}
+
+	time_t currentTick = time::getTime();
+	s_clickFrames.erase(std::remove_if(s_clickFrames.begin(), s_clickFrames.end(), [currentTick](float tick) {
+		return currentTick - tick > 1000;
+	}), s_clickFrames.end());
+
+	hasClicked = false;
+	return {};
+}
+
 void mod_main(HMODULE) {
 	//static Console console;
 	std::cout << std::boolalpha;
@@ -421,6 +479,8 @@ void mod_main(HMODULE) {
 	add_hook<&PlayLayer_init>(base + 0xe35d0);
 	add_hook<&PlayLayer_update>(base + 0xe9360);
 	add_hook<&PlayLayer_updateAttempts>(base + 0xf33a0);
+	add_hook<&PlayLayer_resetLevel>(base + 0xf1f20);
+	add_hook<&PlayLayer_pushButton>(base + 0xf0a00);
 
 	add_hook<&ColorSelectPopup_init>(base + 0x29db0);
 	add_hook<&ColorSelectPopup_dtor>(base + 0x2b050);
@@ -461,5 +521,5 @@ void mod_main(HMODULE) {
 	patch(base + 0x4779c, { 0xeb });
 	patch(base + 0x477b9, { 0xeb });
 
-	//patch(base + 0x4b445, { 0xeb, 0x44 });
+	patch(base + 0x4b445, { 0xeb, 0x44 });
 }

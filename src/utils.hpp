@@ -298,3 +298,11 @@ struct ColorUtility { //taken from thesillydoggo
 			return ccc3(static_cast<uint8_t>(r * 255), static_cast<uint8_t>(g * 255), static_cast<uint8_t>(b * 255));
 		}
 };
+
+struct time {
+	static inline time_t getTime() {
+		return std::chrono::duration_cast<std::chrono::milliseconds>(
+				std::chrono::high_resolution_clock::now().time_since_epoch()
+		).count();
+	}
+};
