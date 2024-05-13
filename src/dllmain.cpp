@@ -103,7 +103,7 @@ void createAttemptsLabel(PlayLayer* self) {
 	auto attemptsLabel = CCLabelBMFont::create("Attempt 1", "bigFont.fnt");
 	attemptsLabel->setAnchorPoint({0.f, 0.5f});
 	attemptsLabel->setScale(0.5f);
-	attemptsLabel->setZOrder(999999);
+	attemptsLabel->setZOrder(999998);
 	attemptsLabel->setTag(6968);
 	attemptsLabel->setOpacity(255 / 2);
 	reinterpret_cast<CCMenu*>(self->getChildByTag(69))->addChild(attemptsLabel);
@@ -131,6 +131,7 @@ void updateLabels(PlayLayer* self) {
 			labelAmount++;
 		}
 		if(fps_label) {
+			fps_label->setZOrder(999999);
 			static_cast<CCLabelBMFont*>(fps_label)->setString(std::to_string(static_cast<int>(ImGui::GetIO().Framerate)).c_str());
 			if(!state().fps_label) {
 				fps_label->removeFromParent();
@@ -139,6 +140,7 @@ void updateLabels(PlayLayer* self) {
 		}
 		if(attemptsLabel) {
 			int attemptCount = self->attemptsCount();
+			attemptsLabel->setZOrder(999998);
 			if(attemptCount < 1)
 				attemptCount = 1;
 			static_cast<CCLabelBMFont*>(attemptsLabel)->setString(CCString::createWithFormat("Attempt %i", attemptCount)->getCString());
