@@ -180,6 +180,9 @@ public:
 	auto attemptsLabel() {
 		return from<CCLabelBMFont*>(this, 0x1d8);
 	}
+	auto attemptsCount() {
+		return from<int>(this, 0x2e8);
+	}
 };
 
 class FMODAudioEngine : public CCNode {

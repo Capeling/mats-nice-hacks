@@ -17,6 +17,7 @@
 #include "save-file.hpp"
 #include "lvl-share.hpp"
 #include <cocos-ext.h>
+#include <imgui-hook.hpp>
 
 #include <cmath>
 #undef isnan
@@ -72,31 +73,107 @@ void EditorUI_ccTouchEnded(EditorUI* self, void* idc, void* idc2) {
 	return orig<&EditorUI_ccTouchEnded>(self, idc, idc2);
 }
 
-int playerFrame = 0;
-
 void PlayerObject_updatePlayerFrame(PlayerObject* self, int frameID) {
-	if(playerFrame == 0 && frameID != 0)
-		playerFrame = frameID;
-	orig<&PlayerObject_updatePlayerFrame>(self, playerFrame);
-}
-
-void PlayerObject_init(PlayerObject* self, int frame, int type, int idk) {
-	if(playerFrame == 0)
-		playerFrame = frame;
-
-	std::cout << frame << " " << type << " " << idk << " " << std::endl;
-	orig<&PlayerObject_init>(self, frame, type, idk);
+	if(state().use_mini_icon) return orig<&PlayerObject_updatePlayerFrame>(self, 0);
+	orig<&PlayerObject_updatePlayerFrame>(self, frameID);
 }
 
 void PlayerObject_updatePlayerRollFrame(PlayerObject* self, int frameID) {
+	if(state().use_mini_icon) return orig<&PlayerObject_updatePlayerRollFrame>(self, 0);
 	orig<&PlayerObject_updatePlayerRollFrame>(self, frameID);
 }
 
-bool PlayLayer_init(PlayLayer* self, GJGameLevel* level) {
-	playerFrame = 0;
-	if (!orig<&PlayLayer_init>(self, level)) return false;
+void PlayerObject_init(PlayerObject* self, int frame, int type, int idk) {
+	orig<&PlayerObject_init>(self, frame, type, idk);
+	if(state().use_mini_icon) orig<&PlayerObject_updatePlayerFrame>(self, 0);
+}
 
-	const auto win_size = CCDirector::sharedDirector()->getWinSize();
+
+void createFpsLabel(PlayLayer* self) {
+	auto fpsLabel = CCLabelBMFont::create("0", "bigFont.fnt");
+	fpsLabel->setAnchorPoint({0.f, 0.5f});
+	fpsLabel->setScale(0.5f);
+	fpsLabel->setZOrder(999999);
+	fpsLabel->setTag(6969);
+	fpsLabel->setOpacity(255 / 2);
+	reinterpret_cast<CCMenu*>(self->getChildByTag(69))->addChild(fpsLabel);
+}
+
+void createAttemptsLabel(PlayLayer* self) {
+	auto attemptsLabel = CCLabelBMFont::create("Attempt 1", "bigFont.fnt");
+	attemptsLabel->setAnchorPoint({0.f, 0.5f});
+	attemptsLabel->setScale(0.5f);
+	attemptsLabel->setZOrder(999999);
+	attemptsLabel->setTag(6968);
+	attemptsLabel->setOpacity(255 / 2);
+	reinterpret_cast<CCMenu*>(self->getChildByTag(69))->addChild(attemptsLabel);
+}
+
+int labelAmount = 0;
+
+void updateLabels(PlayLayer* self) {
+
+	auto director = CCDirector::sharedDirector();
+
+	auto labelMenu = static_cast<CCMenu*>(self->getChildByTag(69));
+	if(labelMenu) {
+		auto fps_label = labelMenu->getChildByTag(6969);
+		auto attemptsLabel = labelMenu->getChildByTag(6968);
+		if(state().fps_label && !fps_label) {
+			createFpsLabel(self);
+			fps_label = labelMenu->getChildByTag(6969);
+			labelAmount++;
+		}
+
+		if(state().attempts_label && !attemptsLabel) {
+			createAttemptsLabel(self);
+			attemptsLabel = labelMenu->getChildByTag(6968);
+			labelAmount++;
+		}
+		if(fps_label) {
+			static_cast<CCLabelBMFont*>(fps_label)->setString(std::to_string(static_cast<int>(ImGui::GetIO().Framerate)).c_str());
+			if(!state().fps_label) {
+				fps_label->removeFromParent();
+				labelAmount--;
+			}
+		}
+		if(attemptsLabel) {
+			int attemptCount = self->attemptsCount();
+			if(attemptCount < 1)
+				attemptCount = 1;
+			static_cast<CCLabelBMFont*>(attemptsLabel)->setString(CCString::createWithFormat("Attempt %i", attemptCount)->getCString());
+			if(!state().attempts_label) {
+				attemptsLabel->removeFromParent();
+				labelAmount--;
+			}
+		}
+		labelMenu->setPosition({director->getScreenLeft() + 5.f, director->getScreenTop() - labelAmount * 10});
+		labelMenu->alignItemsVerticallyWithPadding(1.f);
+	}
+}
+
+
+bool PlayLayer_init(PlayLayer* self, GJGameLevel* level) {
+	if (!orig<&PlayLayer_init>(self, level)) return false;
+	labelAmount = 0;
+
+	auto director = CCDirector::sharedDirector();
+	auto winSize = director->getWinSize();
+
+	auto labelMenu = CCMenu::create();
+	labelMenu->setTag(69);
+	labelMenu->setZOrder(999999);
+	self->addChild(labelMenu);
+
+	if(state().fps_label) {
+		createFpsLabel(self);
+		labelAmount++;
+	}
+	if(state().attempts_label) {
+		createAttemptsLabel(self);
+		labelAmount++;
+	}
+
 
 	if (state().show_percent) {
 		auto gm = GameManager::sharedState();
@@ -106,13 +183,15 @@ bool PlayLayer_init(PlayLayer* self, GJGameLevel* level) {
 		label->setAnchorPoint({ bar ? 0.f : 0.5f, 0.5f });
 		label->setScale(0.5f);
 		label->setZOrder(999999);
-		label->setPosition({ win_size.width / 2.f + (bar ? 107.2f : 0.f), win_size.height - 8.f });
+		label->setPosition({ winSize.width / 2.f + (bar ? 107.2f : 0.f), winSize.height - 8.f });
 		label->setTag(12345);
 		self->addChild(label);
 	}
 	if(state().hide_attempts) {
 		self->attemptsLabel()->setVisible(false);
 	}
+
+	updateLabels(self);
 
 	return true;
 }
@@ -121,7 +200,13 @@ auto rgbUpdate = 0.0f;
 
 static ccColor3B getChromaColour()
 {
-	return ColourUtility::hsvToRgb(cchsv((rgbUpdate * 180) / 10.0f, 1.0f, 1.0f, true, true));
+	return ColorUtility::hsvToRgb(cchsv((rgbUpdate * 180) / 10.0f, 1.0f, 1.0f, true, true));
+}
+
+
+void PlayLayer_updateAttempts(PlayLayer* self) {
+	updateLabels(self);
+	orig<&PlayLayer_updateAttempts>(self);
 }
 
 cc::thiscall<void> PlayLayer_update(PlayLayer* self, float dt) {
@@ -131,6 +216,8 @@ cc::thiscall<void> PlayLayer_update(PlayLayer* self, float dt) {
 		const auto value = std::min(self->player1()->getPositionX() / self->levelLength(), 1.f) * 100.f;
 		reinterpret_cast<CCLabelBMFont*>(label)->setString(CCString::createWithFormat("%.2f%%", value)->getCString());
 	}
+
+	updateLabels(self);
 
 	if (state().rainbow_color) { //nobody has to know
 
@@ -154,11 +241,12 @@ cc::thiscall<void> PlayLayer_update(PlayLayer* self, float dt) {
 			}
 		}
 		
-		auto player2Glow = static_cast<CCSprite*>(playerGlowNode->getChildren()->objectAtIndex(1));
-		for(size_t i = 0; i < player2Glow->getChildrenCount(); i++) {
-			auto node = static_cast<CCSprite*>(player2Glow->getChildren()->objectAtIndex(i));
-			node->setColor(getChromaColour());
-		}
+		if(auto player2Glow = static_cast<CCSprite*>(playerGlowNode->getChildren()->objectAtIndex(playerGlowNode->getChildrenCount()))) {
+			for(size_t i = 0; i < player2Glow->getChildrenCount(); i++) {
+				auto node = static_cast<CCSprite*>(player2Glow->getChildren()->objectAtIndex(i));
+				node->setColor(getChromaColour());
+			}
+		};
 	}
 
 	// sick
@@ -330,6 +418,7 @@ void mod_main(HMODULE) {
 
 	add_hook<&PlayLayer_init>(base + 0xe35d0);
 	add_hook<&PlayLayer_update>(base + 0xe9360);
+	add_hook<&PlayLayer_updateAttempts>(base + 0xf33a0);
 
 	add_hook<&ColorSelectPopup_init>(base + 0x29db0);
 	add_hook<&ColorSelectPopup_dtor>(base + 0x2b050);
@@ -344,9 +433,9 @@ void mod_main(HMODULE) {
 
 	add_hook<&CustomizeObjectLayer_init>(base + 0x2dc70);
 
-	//add_hook<&PlayerObject_init>(base + 0xd8ca0);
-	//add_hook<&PlayerObject_updatePlayerFrame>(base + 0xdfff0);
-	//add_hook<&PlayerObject_updatePlayerRollFrame>(base + 0xe0430);
+	add_hook<&PlayerObject_init>(base + 0xd8ca0);
+	add_hook<&PlayerObject_updatePlayerFrame>(base + 0xdfff0);
+	add_hook<&PlayerObject_updatePlayerRollFrame>(base + 0xe0430);
 
 	add_hook<&GJGarageLayer_init>(base + 0x7c5c0);
 

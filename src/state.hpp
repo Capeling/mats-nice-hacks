@@ -35,6 +35,11 @@ struct StateStruct {
 
 	float rainbow_speed = 1.f;
 	bool rainbow_color = false;
+	bool use_mini_icon = false;
+
+
+	bool fps_label = false;
+	bool attempts_label = false;
 
 	bool preview_mode = false;
 	// fixes the piss yellow color u get sometimes
@@ -53,5 +58,6 @@ DEF_SCHEMA(StateStruct, speed, has_retry_keybind,
 	no_transition, no_trail, no_wave_trail, solid_wave_trail,
 	no_particles, copy_hack, fps_bypass, fps,
 	hide_practice, show_percent, verify_hack,
-	hide_attempts, edit_level, hide_trigger_lines, hide_grid, rainbow_color, rainbow_speed,
+	hide_attempts, edit_level, hide_trigger_lines, hide_grid, rainbow_color, rainbow_speed, use_mini_icon,
+	fps_label, attempts_label,
 	smooth_editor_trail, always_fix_hue)

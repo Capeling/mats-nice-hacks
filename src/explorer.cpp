@@ -71,6 +71,11 @@ void render_node_properties(CCNode* node) {
 		ImGui::DragFloat2("Position", (float*)&value);
 		if (value != node->getPosition()) node->setPosition(value);
 	}
+	{
+		auto value = node->getAnchorPoint();
+		ImGui::DragFloat2("Anchor Point", (float*)&value);
+		if (value != node->getAnchorPoint()) node->setAnchorPoint(value);
+	}
 	if (ImGui::TreeNode("Advanced Position PRO")) {
 		if (node->getParent()) {
 			const auto pos = node->getParent()->convertToWorldSpace(node->getPosition());
@@ -86,7 +91,12 @@ void render_node_properties(CCNode* node) {
 		if (value != node->getScale()) node->setScale(value);
 	}
 	if (auto item = dynamic_cast<CCMenuItemSprite*>(node)) {
-		ImGui::Text("CCMenuItem selector: %s", format_addr(union_cast<void*>(item->getSelector())).c_str());
+		auto thing = format_addr(union_cast<void*>(item->getSelector())).c_str();
+		ImGui::Text("CCMenuItem selector: %s", thing);
+		ImGui::SameLine();
+		if(ImGui::Button("Copy")) {
+			clipboard::write(CCString::createWithFormat("%p", thing)->getCString());
+		}
 	}
 	{
 		auto value = node->isVisible();

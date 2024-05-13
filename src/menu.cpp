@@ -115,6 +115,7 @@ void imgui_render() {
 			ImGui::InputFloat("##rainbowiconspeed", &state().rainbow_speed);
 			ImGui::SameLine();
 			ImGui::Checkbox("Rainbow icon", &state().rainbow_color);
+			ImGui::Checkbox("Use mini icon", &state().use_mini_icon);
 			ImGui::Checkbox("Editor preview mode", &state().preview_mode);
 			if (ImGui::Checkbox("Edit level", &state().edit_level) || force) {
 				// PauseLayer::init
@@ -136,6 +137,11 @@ void imgui_render() {
 				patch_toggle(base + 0x91a34, { 0x90, 0x90 }, state().smooth_editor_trail);
 			}
 			ImGui::Checkbox("Always fix yellow color bug", &state().always_fix_hue);
+			if(ImGui::TreeNode("Status labels")) {
+				ImGui::Checkbox("FPS label", &state().fps_label);
+				ImGui::Checkbox("Attempts label", &state().attempts_label);
+				ImGui::TreePop();
+			}
 		}
 		ImGui::End();
 

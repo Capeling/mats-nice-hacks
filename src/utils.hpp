@@ -269,7 +269,7 @@ public:
 	}
 };
 
-struct ColourUtility {
+struct ColorUtility { //taken from thesillydoggo
 	public:
 		static ccColor3B hsvToRgb(const ccHSVValue& hsv) {
 			float hue = hsv.h;
