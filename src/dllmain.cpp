@@ -72,7 +72,28 @@ void EditorUI_ccTouchEnded(EditorUI* self, void* idc, void* idc2) {
 	return orig<&EditorUI_ccTouchEnded>(self, idc, idc2);
 }
 
+int playerFrame = 0;
+
+void PlayerObject_updatePlayerFrame(PlayerObject* self, int frameID) {
+	if(playerFrame == 0 && frameID != 0)
+		playerFrame = frameID;
+	orig<&PlayerObject_updatePlayerFrame>(self, playerFrame);
+}
+
+void PlayerObject_init(PlayerObject* self, int frame, int type, int idk) {
+	if(playerFrame == 0)
+		playerFrame = frame;
+
+	std::cout << frame << " " << type << " " << idk << " " << std::endl;
+	orig<&PlayerObject_init>(self, frame, type, idk);
+}
+
+void PlayerObject_updatePlayerRollFrame(PlayerObject* self, int frameID) {
+	orig<&PlayerObject_updatePlayerRollFrame>(self, frameID);
+}
+
 bool PlayLayer_init(PlayLayer* self, GJGameLevel* level) {
+	playerFrame = 0;
 	if (!orig<&PlayLayer_init>(self, level)) return false;
 
 	const auto win_size = CCDirector::sharedDirector()->getWinSize();
@@ -111,10 +132,12 @@ cc::thiscall<void> PlayLayer_update(PlayLayer* self, float dt) {
 		reinterpret_cast<CCLabelBMFont*>(label)->setString(CCString::createWithFormat("%.2f%%", value)->getCString());
 	}
 
-	if (state().rainbow_color) {
+	if (state().rainbow_color) { //nobody has to know
 
 		auto player1 = self->player1();
 		auto player2 = self->player2();
+
+		auto playerGlowNode = self->playerGlowNode();
 
 		rgbUpdate += dt * state().rainbow_speed;
 
@@ -125,6 +148,15 @@ cc::thiscall<void> PlayLayer_update(PlayLayer* self, float dt) {
 
 		for(size_t i = 0; i < player2->getChildrenCount(); i++) {
 			auto node = static_cast<CCSprite*>(player2->getChildren()->objectAtIndex(i));
+			for(size_t i = 0; i < node->getChildrenCount(); i++) {
+				auto node2 = static_cast<CCSprite*>(node->getChildren()->objectAtIndex(i));
+				node2->setColor(getChromaColour());
+			}
+		}
+		
+		auto player2Glow = static_cast<CCSprite*>(playerGlowNode->getChildren()->objectAtIndex(1));
+		for(size_t i = 0; i < player2Glow->getChildrenCount(); i++) {
+			auto node = static_cast<CCSprite*>(player2Glow->getChildren()->objectAtIndex(i));
 			node->setColor(getChromaColour());
 		}
 	}
@@ -253,13 +285,10 @@ GJGameLevel* LevelTools_getLevel(int levelID, bool __save) {
 	return orig<&LevelTools_getLevel>(levelID, __save);
 }
 
-void PlayerObject_updatePlayerFrame(PlayerObject* self, int frameID) {
-	orig<&PlayerObject_updatePlayerFrame>(self, MBO(int, GameManager::sharedState(), 0x27c));
+bool GJGarageLayer_init(GJGarageLayer* self) {
+	return orig<&GJGarageLayer_init>(self);
 }
 
-void PlayerObject_updatePlayerRollFrame(PlayerObject* self, int frameID) {
-	orig<&PlayerObject_updatePlayerRollFrame>(self, frameID);
-}
 
 matdash::cc::c_decl<cocos2d::extension::RGBA> cocos_hsv2rgb(cocos2d::extension::HSV color) {
 	if ((state().should_fix_hue || state().always_fix_hue) && std::isnan(color.h))
@@ -268,7 +297,7 @@ matdash::cc::c_decl<cocos2d::extension::RGBA> cocos_hsv2rgb(cocos2d::extension::
 }
 
 void mod_main(HMODULE) {
-	//static Console console;
+	static Console console;
 	std::cout << std::boolalpha;
 
 	state().load();
@@ -315,10 +344,11 @@ void mod_main(HMODULE) {
 
 	add_hook<&CustomizeObjectLayer_init>(base + 0x2dc70);
 
-	//add_hook<&PlayerObject_updatePlayerFrame, matdash::Thiscall>(base + 0xdfff0);
-	//add_hook<&PlayerObject_updatePlayerRollFrame, matdash::Thiscall>(base + 0xe0430);
+	//add_hook<&PlayerObject_init>(base + 0xd8ca0);
+	//add_hook<&PlayerObject_updatePlayerFrame>(base + 0xdfff0);
+	//add_hook<&PlayerObject_updatePlayerRollFrame>(base + 0xe0430);
 
-	//add_hook<&LevelSelectLayer_init>(base + 0xa59d0);
+	add_hook<&GJGarageLayer_init>(base + 0x7c5c0);
 
 	//add_hook<&LevelTools_getAudioTitle>(base + 0xa9ad0);
 	//add_hook<&LevelTools_getLevel>(base + 0xa9280);

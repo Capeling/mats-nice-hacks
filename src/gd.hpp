@@ -117,11 +117,15 @@ public:
 	}
 
 	int getPlayerFrame() {
-		return from<int>(this, 0x15c);
+		return from<int>(this, 0x284);
 	}
 	
 	int getPlayerBall() {
 		return from<int>(this, 0x294);
+	}
+
+	IconType getPlayerType() {
+		return from<IconType>(this, 0x2b4);
 	}
 
 	cocos2d::ccColor3B colorForIdx(int colorID) {
@@ -131,8 +135,29 @@ public:
 	}
 };
 
-class PlayerObject;
+class GameObject;
 
+class PlayerObject : public CCSprite {
+public:
+	auto& position() {
+		return from<CCPoint>(this, 0x4a8);
+	}
+	CCSprite* cubePrimary() {
+		return static_cast<CCSprite*>(cubeSecondary()->getParent());
+	}
+	CCSprite* cubeSecondary() {
+		return from<CCSprite*>(this, 0x374);
+	}
+	void updatePlayerGlow() {
+		reinterpret_cast<void(__thiscall*)(PlayerObject*)>(base + 0xdfc80)(this);
+	}
+	void toggleRollMode(bool state) {
+		reinterpret_cast<void(__thiscall*)(PlayerObject*, bool)>(base + 0xdf490)(this, state);
+	}
+	void togglePlayerScale(bool state) {
+		reinterpret_cast<void(__thiscall*)(PlayerObject*, bool)>(base + 0xe12e0)(this, state);
+	}
+};
 
 class PlayLayer : public CCLayer {
 public:
@@ -146,28 +171,14 @@ public:
 	auto player2() {
 		return from<PlayerObject*>(this, 0x2a8);
 	}
+	auto playerGlowNode() {
+		return from<CCSpriteBatchNode*>(this, 0x2d0);
+	}
 	auto levelLength() {
 		return from<float>(this, 0x1d0);
 	}
 	auto attemptsLabel() {
 		return from<CCLabelBMFont*>(this, 0x1d8);
-	}
-};
-
-class PlayerObject : public CCSprite {
-public:
-	auto& position() {
-		return from<CCPoint>(this, 0x4a8);
-	}
-	CCSprite* cubePrimary() {
-		return static_cast<CCSprite*>(cubeSecondary()->getParent());
-	}
-	CCSprite* cubeSecondary() {
-		return from<CCSprite*>(this, 0x374);
-	}
-	
-	void updatePlayerGlow() {
-		reinterpret_cast<void(__thiscall*)(PlayerObject*)>(base + 0xdfc80)(this);
 	}
 };
 
@@ -181,7 +192,6 @@ public:
 	}
 };
 
-class GameObject;
 
 class EditorUI : public CCLayer {
 public:
@@ -221,11 +231,13 @@ class AppDelegate : public CCApplication {
 
 };
 
-enum class GJLevelType {
+enum GJLevelType {
 	Local = 1,
 	Editor = 2,
 	Saved = 3
 };
+
+class GJGarageLayer;
 
 class GJGameLevel : public CCNode {
 public:
