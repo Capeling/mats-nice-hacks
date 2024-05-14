@@ -89,6 +89,12 @@ enum IconType {
 
 class GameRateDelegate;
 
+class GameToolbox {
+	static void alignItemsVertically(cocos2d::CCArray* items, float gap, cocos2d::CCPoint _pos) {
+
+	};
+};
+
 class LastGameScene;
 
 class LevelSelectLayer;
@@ -190,7 +196,12 @@ public:
 	auto attemptsCount() {
 		return from<int>(this, 0x2e8);
 	}
+	auto getNewBest() {
+		return from<int>(this, 0x2fc);
+	}
 };
+
+class BoomScrollLayer;
 
 class FMODAudioEngine : public CCNode {
 public:
@@ -202,6 +213,108 @@ public:
 	}
 };
 
+class CCMenuItemSpriteExtra : public CCMenuItemSprite {
+public:
+	static auto create(CCNode* sprite, CCNode* idk, CCObject* target, SEL_MenuHandler callback) {
+		auto ret = reinterpret_cast<CCMenuItemSpriteExtra*(__fastcall*)(CCNode*, CCNode*, CCObject*, SEL_MenuHandler)>
+			(base + 0xd1e0)(sprite, idk, target, callback);
+		__asm add esp, 0x8;
+		return ret;
+	}
+};
+
+class EditButtonBar : public CCNode {
+public:
+	auto buttonArray() {
+		return from<CCArray*>(this, 0xec);
+	}
+};
+
+class CreateMenuItem : public CCNode {
+
+};
+class DrawGridLayer : public CCLayer {
+public:
+	float timeForXPos(float pos) {
+		return reinterpret_cast<float(__vectorcall*)(
+			float, float, float, float, float, float,
+			DrawGridLayer*
+		)>(base + 0x934f0)(0.f, pos, 0.f, 0.f, 0.f, 0.f, this);
+	}
+	auto getPlaybackLinePos() {
+		return from<float>(this, 0x120);
+	}
+};
+
+class CCMenuItemToggler;
+
+class UndoObject;
+
+class GJRotationControl;
+
+class Slider;
+
+enum EditMode {
+
+};
+
+class SettingsColorObject : public CCNode {
+public:
+	ccColor3B m_color;
+	bool m_blending;
+	int m_custom;
+};
+
+static_assert(sizeof(SettingsColorObject) == 0xF0, "size wrong");
+
+class LevelSettingsObject : public CCNode {
+public:
+	SettingsColorObject* m_background_color;
+	SettingsColorObject* m_ground_color;
+	SettingsColorObject* m_line_color;
+	SettingsColorObject* m_object_color;
+	SettingsColorObject* m_3dl_color;
+	SettingsColorObject* m_color1;
+	SettingsColorObject* m_color2;
+	SettingsColorObject* m_color3;
+	SettingsColorObject* m_color4;
+};
+
+class EditorUI;
+
+class LevelEditorLayer : public CCLayer {
+public:
+	auto editorUI() {
+		return from<EditorUI*>(this, 0x15c);
+	}
+	auto backgroundSprite() {
+		return from<CCSprite*>(this, 0x160);
+	}
+	auto gameLayer() {
+		return from<CCLayer*>(this, 0x188);
+	}
+	auto getLevelSettings() {
+		return from<LevelSettingsObject*>(this, 0x190);
+	}
+	auto getDrawGrid() {
+		return from<DrawGridLayer*>(this, 0x184);
+	}
+	auto getPlaytestState() {
+		return from<int>(this, 0x198);
+	}
+	auto getPlayer1() {
+		return from<PlayerObject*>(this, 0x19c);
+	}
+	auto getLevelSections() {
+		return from<CCArray*>(this, 0x16c);
+	}
+	void addToSection(GameObject* object) {
+		reinterpret_cast<void(__thiscall*)(LevelEditorLayer*, GameObject*)>(base + 0x8d220)(this, object);
+	}
+	auto getObjectBatchNode() {
+		return from<CCSpriteBatchNode*>(this, 0x164);
+	}
+};
 
 class EditorUI : public CCLayer {
 public:
@@ -223,6 +336,10 @@ public:
 
 	void updateZoom(float amt) {
 		reinterpret_cast<void(__vectorcall*)(float, float, EditorUI*)>(base + 0x48c30)(0.f, amt, this);
+	}
+
+	CreateMenuItem* getCreateBtn(int objID, int bgID) {
+		return reinterpret_cast<CreateMenuItem*(__thiscall*)(EditorUI*, int, int)>(base + 0x47200)(this, objID, bgID);
 	}
 
 	std::vector<GameObject*> getSelectedObjects() {
@@ -430,15 +547,6 @@ public:
 	}
 };
 
-class CCMenuItemSpriteExtra : public CCMenuItemSprite {
-public:
-	static auto create(CCNode* sprite, CCNode* idk, CCObject* target, SEL_MenuHandler callback) {
-		auto ret = reinterpret_cast<CCMenuItemSpriteExtra*(__fastcall*)(CCNode*, CCNode*, CCObject*, SEL_MenuHandler)>
-			(base + 0xd1e0)(sprite, idk, target, callback);
-		__asm add esp, 0x8;
-		return ret;
-	}
-};
 
 class ButtonSprite : public CCSprite {
 public:
@@ -461,75 +569,6 @@ public:
 
 class EditorPauseLayer : public CCLayer {
 
-};
-
-class DrawGridLayer : public CCLayer {
-public:
-	float timeForXPos(float pos) {
-		return reinterpret_cast<float(__vectorcall*)(
-			float, float, float, float, float, float,
-			DrawGridLayer*
-		)>(base + 0x934f0)(0.f, pos, 0.f, 0.f, 0.f, 0.f, this);
-	}
-	auto getPlaybackLinePos() {
-		return from<float>(this, 0x120);
-	}
-};
-
-class SettingsColorObject : public CCNode {
-public:
-	ccColor3B m_color;
-	bool m_blending;
-	int m_custom;
-};
-
-static_assert(sizeof(SettingsColorObject) == 0xF0, "size wrong");
-
-class LevelSettingsObject : public CCNode {
-public:
-	SettingsColorObject* m_background_color;
-	SettingsColorObject* m_ground_color;
-	SettingsColorObject* m_line_color;
-	SettingsColorObject* m_object_color;
-	SettingsColorObject* m_3dl_color;
-	SettingsColorObject* m_color1;
-	SettingsColorObject* m_color2;
-	SettingsColorObject* m_color3;
-	SettingsColorObject* m_color4;
-};
-
-class LevelEditorLayer : public CCLayer {
-public:
-	auto editorUI() {
-		return from<EditorUI*>(this, 0x15c);
-	}
-	auto backgroundSprite() {
-		return from<CCSprite*>(this, 0x160);
-	}
-	auto gameLayer() {
-		return from<CCLayer*>(this, 0x188);
-	}
-	auto getLevelSettings() {
-		return from<LevelSettingsObject*>(this, 0x190);
-	}
-	auto getDrawGrid() {
-		return from<DrawGridLayer*>(this, 0x184);
-	}
-	auto getPlaytestState() {
-		return from<int>(this, 0x198);
-	}
-	auto getPlayer1() {
-		return from<PlayerObject*>(this, 0x19c);
-	}
-	auto getLevelSections() {
-		return from<CCArray*>(this, 0x16c);
-	}
-	void addToSection(GameObject* object) {
-		reinterpret_cast<void(__thiscall*)(LevelEditorLayer*, GameObject*)>(base + 0x8d220)(this, object);
-	}
-	auto getObjectBatchNode() {
-		return from<CCSpriteBatchNode*>(this, 0x164);
-	}
 };
 
 class LocalLevelManager : public CCNode {

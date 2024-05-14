@@ -151,12 +151,15 @@ void imgui_render() {
 			}
 			if(ImGui::TreeNode("Status labels")) {
 				ImGui::Checkbox("FPS label", &state().fps_label);
-				ImGui::Checkbox("Attempts label", &state().attempts_label);
+				ImGui::SameLine();
+				ImGui::Checkbox("Prefix##fps", &state().fps_prefix);
 				ImGui::Checkbox("Cps label", &state().cps_label);
 				ImGui::SameLine();
-				ImGui::Checkbox("Prefix", &state().cps_prefix);
+				ImGui::Checkbox("Prefix##cps", &state().cps_prefix);
 				ImGui::SameLine();
 				ImGui::Checkbox("Total clicks", &state().cps_total);
+				ImGui::Checkbox("Best run", &state().best_run);
+				ImGui::Checkbox("Attempts label", &state().attempts_label);
 				ImGui::TreePop();
 			}
 		}

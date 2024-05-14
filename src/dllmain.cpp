@@ -226,15 +226,22 @@ CCMenu* labelMenu = nullptr;
 CCLabelBMFont* fpsLabel = nullptr;
 CCLabelBMFont* attemptsLabel = nullptr;
 CCLabelBMFont* cpsLabel = nullptr;
+CCLabelBMFont* bestRunLabel = nullptr;
 
 std::vector<time_t> s_clickFrames;
 int totalClicks = 0;
+
+void updateLabelPositions() {
+	for(int i = 0; i < labelMenu->getChildrenCount(); i++) {
+		auto node = static_cast<CCNode*>(labelMenu->getChildren()->objectAtIndex(i));
+		node->setPositionY(0 - (i * 17));
+	}
+}
 
 CCLabelBMFont* createStandardLabel() {
 	auto label = CCLabelBMFont::create("", "bigFont.fnt");
 	label->setAnchorPoint({0.f, 0.5f});
 	label->setScale(0.5f);
-	label->setZOrder(999999);
 	label->setOpacity(255 / 2);
 	labelCount++;
     return label;
@@ -242,17 +249,26 @@ CCLabelBMFont* createStandardLabel() {
 
 void createFpsLabel(PlayLayer* self) {
 	fpsLabel = createStandardLabel();
+	fpsLabel->setZOrder(0);
 	labelMenu->addChild(fpsLabel);
-}
-
-void createAttemptsLabel(PlayLayer* self) {
-	attemptsLabel = createStandardLabel();
-	labelMenu->addChild(attemptsLabel);
 }
 
 void createCpsLabel(PlayLayer* self) {
 	cpsLabel = createStandardLabel();
+	cpsLabel->setZOrder(1);
 	labelMenu->addChild(cpsLabel);
+}
+
+void createBestRunLabel(PlayLayer* self) {
+	bestRunLabel = createStandardLabel();
+	bestRunLabel->setZOrder(2);
+	labelMenu->addChild(bestRunLabel);
+}
+
+void createAttemptsLabel(PlayLayer* self) {
+	attemptsLabel = createStandardLabel();
+	attemptsLabel->setZOrder(3);
+	labelMenu->addChild(attemptsLabel);
 }
 
 void updateAttemptLabel(PlayLayer* self) {
@@ -261,6 +277,13 @@ void updateAttemptLabel(PlayLayer* self) {
         attemptsLabel->setString(CCString::createWithFormat("Attempt %i", attemptCount)->getCString());
     }
 }
+
+void updateBestRunLabel(PlayLayer* self) {
+    if(bestRunLabel) {
+        bestRunLabel->setString(CCString::createWithFormat("Best run: %i%%", self->getNewBest())->getCString());
+    }
+}
+
 
 void updateLabels(PlayLayer* self) {
 
@@ -271,17 +294,26 @@ void updateLabels(PlayLayer* self) {
 			createFpsLabel(self);
 		}
 
+		if(state().cps_label && !cpsLabel) {
+			createCpsLabel(self);
+		}
+
+		if(state().best_run && !bestRunLabel) {
+			createBestRunLabel(self);
+			updateBestRunLabel(self);
+		}
+
 		if(state().attempts_label && !attemptsLabel) {
 			createAttemptsLabel(self);
             updateAttemptLabel(self);
 		}
 
-		if(state().cps_label && !cpsLabel) {
-			createCpsLabel(self);
-		}
 
 		if(fpsLabel) {
-			fpsLabel->setString(std::to_string(static_cast<int>(ImGui::GetIO().Framerate)).c_str());
+			std::string prefix; 
+			if(state().fps_prefix) 
+				prefix= "fps: ";
+			fpsLabel->setString((prefix + std::to_string(static_cast<int>(ImGui::GetIO().Framerate))).c_str());
 			if(!state().fps_label) {
 				fpsLabel->removeFromParent();
 				fpsLabel = nullptr;
@@ -292,11 +324,12 @@ void updateLabels(PlayLayer* self) {
 
         if(cpsLabel) {
 			std::string cpsCurrent = CCString::createWithFormat("%i", s_clickFrames.size())->getCString();
-			std::string cpsTotal = CCString::createWithFormat("/%i", totalClicks)->getCString();
-			std::string prefix = "CPS: ";
-
-			if(!state().cps_prefix) prefix.clear();
-			if(!state().cps_total) cpsTotal.clear();
+			std::string cpsTotal;
+			if(state().cps_total) 
+				cpsTotal = CCString::createWithFormat("/%i", totalClicks)->getCString();
+			std::string prefix; 
+			if(state().cps_prefix) 
+				prefix= "cps: ";
 
             cpsLabel->setString(std::string(prefix + cpsCurrent + cpsTotal).c_str());
 			if(!state().cps_label) {
@@ -311,8 +344,13 @@ void updateLabels(PlayLayer* self) {
 			attemptsLabel = nullptr;
             labelCount--;
         }
-		labelMenu->setPosition({director->getScreenLeft() + 5.f, director->getScreenTop() - (labelCount * 10) + labelCount});
-		labelMenu->alignItemsVerticallyWithPadding(1.f);
+
+        if(!state().best_run && bestRunLabel) {
+            bestRunLabel->removeFromParent();
+			bestRunLabel = nullptr;
+            labelCount--;
+        }
+		
 	}
 }
 
@@ -344,6 +382,8 @@ bool PlayLayer_init(PlayLayer* self, GJGameLevel* level) {
 
 	labelMenu = CCMenu::create();
 	labelMenu->setZOrder(999999);
+	labelMenu->setPosition({director->getScreenLeft() + 5.f, director->getScreenTop() - 10.f});
+
 	self->addChild(labelMenu);
 
 	if(state().fps_label) {
@@ -351,6 +391,10 @@ bool PlayLayer_init(PlayLayer* self, GJGameLevel* level) {
 	}
 	if(state().cps_label) {
 		createCpsLabel(self);
+	}
+	if(state().best_run) {
+		createBestRunLabel(self);
+		updateBestRunLabel(self);
 	}
 	if(state().attempts_label) {
 		createAttemptsLabel(self);
@@ -375,6 +419,7 @@ bool PlayLayer_init(PlayLayer* self, GJGameLevel* level) {
 	}
 
 	updateLabels(self);
+	updateLabelPositions();
 
 	return true;
 }
@@ -389,6 +434,11 @@ void PlayLayer_updateAttempts(PlayLayer* self) {
 	orig<&PlayLayer_updateAttempts>(self);
 }
 
+void PlayLayer_destroyPlayer(PlayLayer* self, PlayerObject* PlayerObject) {
+	orig<&PlayLayer_destroyPlayer>(self, PlayerObject);
+	updateBestRunLabel(self);
+}
+
 cc::thiscall<void> PlayLayer_update(PlayLayer* self, float dt) {
 	orig<&PlayLayer_update>(self, dt);
 	auto label = self->getChildByTag(12345);
@@ -398,6 +448,7 @@ cc::thiscall<void> PlayLayer_update(PlayLayer* self, float dt) {
 	}
 
 	updateLabels(self);
+	updateLabelPositions();
 
 	if (state().rainbow_color) { //nobody has to know
 
@@ -445,7 +496,7 @@ cc::thiscall<void> PlayLayer_update(PlayLayer* self, float dt) {
 }
 
 void mod_main(HMODULE) {
-	//static Console console;
+	static Console console;
 	std::cout << std::boolalpha;
 
 	state().load();
@@ -481,6 +532,7 @@ void mod_main(HMODULE) {
 	add_hook<&PlayLayer_updateAttempts>(base + 0xf33a0);
 	add_hook<&PlayLayer_resetLevel>(base + 0xf1f20);
 	add_hook<&PlayLayer_pushButton>(base + 0xf0a00);
+	add_hook<&PlayLayer_destroyPlayer>(base + 0xf04a0);
 
 	add_hook<&ColorSelectPopup_init>(base + 0x29db0);
 	add_hook<&ColorSelectPopup_dtor>(base + 0x2b050);
@@ -500,6 +552,7 @@ void mod_main(HMODULE) {
 	add_hook<&PlayerObject_updatePlayerRollFrame>(base + 0xe0430);
 
 	add_hook<&GJGarageLayer_init>(base + 0x7c5c0);
+
 
 	//add_hook<&LevelTools_getAudioTitle>(base + 0xa9ad0);
 	//add_hook<&LevelTools_getLevel>(base + 0xa9280);
@@ -522,4 +575,6 @@ void mod_main(HMODULE) {
 	patch(base + 0x477b9, { 0xeb });
 
 	patch(base + 0x4b445, { 0xeb, 0x44 });
+
+	//patch(base + 0xdde9e, { 0x83, 0xc4, 0x04, 0x90, 0x90, 0x90 }); no death effect, wip the particle and circle effect still there
 }

@@ -76,6 +76,11 @@ void render_node_properties(CCNode* node) {
 		ImGui::DragFloat2("Anchor Point", (float*)&value);
 		if (value != node->getAnchorPoint()) node->setAnchorPoint(value);
 	}
+	{
+		auto value = node->getContentSize();
+		ImGui::DragFloat2("Content Size", (float*)&value);
+		if (value != node->getContentSize()) node->setContentSize(value);
+	}
 	if (ImGui::TreeNode("Advanced Position PRO")) {
 		if (node->getParent()) {
 			const auto pos = node->getParent()->convertToWorldSpace(node->getPosition());
