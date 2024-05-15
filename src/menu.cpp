@@ -121,6 +121,7 @@ void imgui_render() {
 					// PlayerObject::setupStreak
 					patch_toggle(base + 0xd9ade, { 0x90, 0x90 }, state().solid_wave_trail);
 				}
+				ImGui::Checkbox("No death effect", &state().no_death_effect);
 				ImGui::Checkbox("Hide player", &state().hide_player);
 				ImGui::SetNextItemWidth(120.f);
 				ImGui::InputFloat("##rainbowiconspeed", &state().rainbow_speed);
@@ -150,6 +151,8 @@ void imgui_render() {
 				ImGui::TreePop();
 			}
 			if(ImGui::TreeNode("Status labels")) {
+				ImGui::SetNextItemWidth(120);
+				ImGui::DragFloat("Scale", &state().status_scale, 0.01f, 0.1f, 2.f);
 				ImGui::Checkbox("FPS label", &state().fps_label);
 				ImGui::SameLine();
 				ImGui::Checkbox("Prefix##fps", &state().fps_prefix);

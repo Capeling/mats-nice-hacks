@@ -230,12 +230,19 @@ CCLabelBMFont* bestRunLabel = nullptr;
 
 std::vector<time_t> s_clickFrames;
 int totalClicks = 0;
+bool isHolding = false;
 
 void updateLabelPositions() {
+
+	auto director = CCDirector::sharedDirector();
+	auto winSize = director->getWinSize();
+
 	for(int i = 0; i < labelMenu->getChildrenCount(); i++) {
 		auto node = static_cast<CCNode*>(labelMenu->getChildren()->objectAtIndex(i));
-		node->setPositionY(0 - (i * 17));
+		node->setPositionY(0 - (i * (17 * (state().status_scale * 2))));
+		node->setScale(state().status_scale);
 	}
+	labelMenu->setPosition({director->getScreenLeft() + (state().status_scale * 10), director->getScreenTop() - ((state().status_scale * 10) * 2)});
 }
 
 CCLabelBMFont* createStandardLabel() {
@@ -332,6 +339,11 @@ void updateLabels(PlayLayer* self) {
 				prefix= "cps: ";
 
             cpsLabel->setString(std::string(prefix + cpsCurrent + cpsTotal).c_str());
+			if(isHolding) {
+				cpsLabel->setColor({0, 255, 0});
+			} else {
+				cpsLabel->setColor({255, 255, 255});
+			}
 			if(!state().cps_label) {
 				cpsLabel->removeFromParent();
 				cpsLabel = nullptr;
@@ -363,12 +375,18 @@ void PlayLayer_resetLevel(PlayLayer* self) {
 bool hasClicked = false;
 
 void PlayLayer_pushButton(PlayLayer* self, int idk1, bool idk2) {
+	isHolding = true;
     if (!hasClicked) {
         s_clickFrames.push_back(time::getTime());
 		totalClicks++;
         hasClicked = true;
     }
     orig<&PlayLayer_pushButton>(self, idk1, idk2);
+}
+
+void PlayLayer_releaseButton(PlayLayer* self, int idk1, bool idk2) {
+	isHolding = false;
+    orig<&PlayLayer_releaseButton>(self, idk1, idk2);
 }
 
 bool PlayLayer_init(PlayLayer* self, GJGameLevel* level) {
@@ -382,7 +400,6 @@ bool PlayLayer_init(PlayLayer* self, GJGameLevel* level) {
 
 	labelMenu = CCMenu::create();
 	labelMenu->setZOrder(999999);
-	labelMenu->setPosition({director->getScreenLeft() + 5.f, director->getScreenTop() - 10.f});
 
 	self->addChild(labelMenu);
 
@@ -428,6 +445,11 @@ ccColor3B getChromaColour() {
 	return ColorUtility::hsvToRgb(cchsv((updateRgb * 180) / 10.0f, 1.0f, 1.0f, true, true));
 }
 
+ccColor4F getChromaColour4() {
+	auto color3b = ColorUtility::hsvToRgb(cchsv((updateRgb * 180) / 10.0f, 1.0f, 1.0f, true, true));
+	return ccColor4F(color3b.r, color3b.g, color3b.b, 255);
+}
+
 
 void PlayLayer_updateAttempts(PlayLayer* self) {
 	updateAttemptLabel(self);
@@ -437,6 +459,25 @@ void PlayLayer_updateAttempts(PlayLayer* self) {
 void PlayLayer_destroyPlayer(PlayLayer* self, PlayerObject* PlayerObject) {
 	orig<&PlayLayer_destroyPlayer>(self, PlayerObject);
 	updateBestRunLabel(self);
+}
+
+void PlayerObject_destroyPlayer(PlayerObject* self, bool _idk) {
+	if(state().no_death_effect) {
+		self->stopActionByTag(0);
+		self->stopActionByTag(1);
+		auto particle1 = MBO(CCParticleSystemQuad*, self, 0x40c);
+		auto particle2 = MBO(CCParticleSystemQuad*, self, 0x410);
+		auto particle3 = MBO(CCParticleSystemQuad*, self, 0x414);
+		auto particle4 = MBO(CCParticleSystemQuad*, self, 0x418);
+		if(MBO(bool, self, 0x3bd)) {
+			particle1->stopSystem();
+		}
+		particle2->stopSystem();
+		particle3->stopSystem();
+		particle4->stopSystem();
+		return;
+	}
+	orig<&PlayerObject_destroyPlayer>(self, _idk);
 }
 
 cc::thiscall<void> PlayLayer_update(PlayLayer* self, float dt) {
@@ -496,7 +537,7 @@ cc::thiscall<void> PlayLayer_update(PlayLayer* self, float dt) {
 }
 
 void mod_main(HMODULE) {
-	static Console console;
+	//static Console console;
 	std::cout << std::boolalpha;
 
 	state().load();
@@ -532,6 +573,7 @@ void mod_main(HMODULE) {
 	add_hook<&PlayLayer_updateAttempts>(base + 0xf33a0);
 	add_hook<&PlayLayer_resetLevel>(base + 0xf1f20);
 	add_hook<&PlayLayer_pushButton>(base + 0xf0a00);
+	add_hook<&PlayLayer_releaseButton>(base + 0xf0af0);
 	add_hook<&PlayLayer_destroyPlayer>(base + 0xf04a0);
 
 	add_hook<&ColorSelectPopup_init>(base + 0x29db0);
@@ -550,9 +592,9 @@ void mod_main(HMODULE) {
 	add_hook<&PlayerObject_init>(base + 0xd8ca0);
 	add_hook<&PlayerObject_updatePlayerFrame>(base + 0xdfff0);
 	add_hook<&PlayerObject_updatePlayerRollFrame>(base + 0xe0430);
+	add_hook<&PlayerObject_destroyPlayer>(base + 0xddda0);
 
 	add_hook<&GJGarageLayer_init>(base + 0x7c5c0);
-
 
 	//add_hook<&LevelTools_getAudioTitle>(base + 0xa9ad0);
 	//add_hook<&LevelTools_getLevel>(base + 0xa9280);
@@ -575,6 +617,9 @@ void mod_main(HMODULE) {
 	patch(base + 0x477b9, { 0xeb });
 
 	patch(base + 0x4b445, { 0xeb, 0x44 });
+
+	//patch(base + 0xf05d0, { 0x90, 0x90, 0x90, 0x90, 0x90 });
+	//patch(base + 0xf05f4, { 0x90, 0x90, 0x90, 0x90, 0x90 });
 
 	//patch(base + 0xdde9e, { 0x83, 0xc4, 0x04, 0x90, 0x90, 0x90 }); no death effect, wip the particle and circle effect still there
 }
