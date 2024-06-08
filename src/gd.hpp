@@ -7,15 +7,14 @@
 using namespace cocos2d;
 
 
+template <class R, class T>
+R& from(T base, intptr_t offset) {
+	return *reinterpret_cast<R*>(reinterpret_cast<uintptr_t>(base) + offset);
+}
+
 namespace gd {
 	static const auto base = reinterpret_cast<uintptr_t>(GetModuleHandleA(0));
 	static const auto cocos_base = reinterpret_cast<uintptr_t>(GetModuleHandleA("libcocos2d.dll"));
-
-	template <class R, class T>
-	R& from(T base, intptr_t offset) {
-		return *reinterpret_cast<R*>(reinterpret_cast<uintptr_t>(base) + offset);
-	}
-	
 	struct string {
 		union {
 			char inline_data[16];
@@ -54,7 +53,6 @@ namespace gd {
 
 		operator std::string() const { return std::string(sv()); }
 	};
-
 
 	namespace FMOD {
 		static auto base = GetModuleHandleA("fmod.dll");
@@ -142,82 +140,13 @@ namespace gd {
 		}
 	};
 
+	class GameObject;
 
 	class HardStreak : public CCSprite {
 
 	};
 
-	enum class CustomColorMode {
-		Default = 0,
-		PlayerCol1 = 1,
-		PlayerCol2 = 2,
-		LightBG = 5,
-		Col1 = 3,
-		Col2 = 4,
-		Col3 = 6,
-		Col4 = 7,
-		DL = 8
-	};
-
-	class GameObject : public CCSprite {
-	public:
-		auto& id() {
-			return from<int>(this, 0x2c4);
-		}
-		auto& triggerColor() {
-			return from<ccColor3B>(this, 0x2b8);
-		}
-		auto& triggerDuration() {
-			return from<float>(this, 0x2bc);
-		}
-		auto& triggerBlending() {
-			return from<bool>(this, 0x314);
-		}
-		auto& touchTriggered() {
-			return from<bool>(this, 0x271);
-		}
-		void setObjectColor(ccColor3B color) {
-			return reinterpret_cast<void(__thiscall*)(GameObject*, ccColor3B)>(base + 0x75560)(this, color);
-		}
-		bool getIsTintObject() const {
-			return from<bool>(this, 0x2cb);
-		}
-		bool getHasColor() const {
-			return from<bool>(this, 0x24a);
-		}
-		auto getChildSprite() {
-			return from<CCSprite*>(this, 0x24c);
-		}
-		void setChildColor(ccColor3B color) {
-			if (getHasColor()) {
-				getChildSprite()->setColor(color);
-			}
-		}
-		// my own func
-		void setCustomColor(ccColor3B color) {
-			if (getHasColor()) setChildColor(color);
-			else setObjectColor(color);
-		}
-		auto getActiveColorMode() {
-			return from<CustomColorMode>(this, 0x308);
-		}
-		auto getColorMode() {
-			auto active = from<CustomColorMode>(this, 0x308);
-			auto default_color = from<CustomColorMode>(this, 0x30c);
-			// TODO: gd checks some boolean
-			if (active == CustomColorMode::Default)
-				active = default_color;
-			return active;
-		}
-		bool isSelected() {
-			return from<bool>(this, 0x316);
-		}
-		bool shouldBlendColor() {
-			return reinterpret_cast<bool(__thiscall*)(GameObject*)>(base + 0x6ece0)(this);
-		}
-	};
-
-	class PlayerObject : public GameObject {
+	class PlayerObject : public CCSprite {
 	public:
 		auto& position() {
 			return from<CCPoint>(this, 0x4a8);
@@ -260,7 +189,7 @@ namespace gd {
 		auto levelLength() {
 			return from<float>(this, 0x1d0);
 		}
-		auto m_attemptsLabel() {
+		auto attemptsLabel() {
 			return from<CCLabelBMFont*>(this, 0x1d8);
 		}
 		auto attemptsCount() {
@@ -512,6 +441,76 @@ namespace gd {
 		int m_capacity002;
 		int m_capacity003;
 		int m_capacity004;
+	};
+
+	enum class CustomColorMode {
+		Default = 0,
+		PlayerCol1 = 1,
+		PlayerCol2 = 2,
+		LightBG = 5,
+		Col1 = 3,
+		Col2 = 4,
+		Col3 = 6,
+		Col4 = 7,
+		DL = 8
+	};
+
+	class GameObject : public CCSprite {
+	public:
+		auto& id() {
+			return from<int>(this, 0x2c4);
+		}
+		auto& triggerColor() {
+			return from<ccColor3B>(this, 0x2b8);
+		}
+		auto& triggerDuration() {
+			return from<float>(this, 0x2bc);
+		}
+		auto& triggerBlending() {
+			return from<bool>(this, 0x314);
+		}
+		auto& touchTriggered() {
+			return from<bool>(this, 0x271);
+		}
+		void setObjectColor(ccColor3B color) {
+			return reinterpret_cast<void(__thiscall*)(GameObject*, ccColor3B)>(base + 0x75560)(this, color);
+		}
+		bool getIsTintObject() const {
+			return from<bool>(this, 0x2cb);
+		}
+		bool getHasColor() const {
+			return from<bool>(this, 0x24a);
+		}
+		auto getChildSprite() {
+			return from<CCSprite*>(this, 0x24c);
+		}
+		void setChildColor(ccColor3B color) {
+			if (getHasColor()) {
+				getChildSprite()->setColor(color);
+			}
+		}
+		// my own func
+		void setCustomColor(ccColor3B color) {
+			if (getHasColor()) setChildColor(color);
+			else setObjectColor(color);
+		}
+		auto getActiveColorMode() {
+			return from<CustomColorMode>(this, 0x308);
+		}
+		auto getColorMode() {
+			auto active = from<CustomColorMode>(this, 0x308);
+			auto default_color = from<CustomColorMode>(this, 0x30c);
+			// TODO: gd checks some boolean
+			if (active == CustomColorMode::Default)
+				active = default_color;
+			return active;
+		}
+		bool isSelected() {
+			return from<bool>(this, 0x316);
+		}
+		bool shouldBlendColor() {
+			return reinterpret_cast<bool(__thiscall*)(GameObject*)>(base + 0x6ece0)(this);
+		}
 	};
 
 	class FLAlertLayerProtocol {

@@ -71,7 +71,7 @@ bool PlayLayer::init_(gd::GJGameLevel* level) {
 		this->addChild(label);
 	}
 	if (state().hide_attempts) {
-		this->m_attemptsLabel()->setVisible(false);
+		this->attemptsLabel()->setVisible(false);
 	}
 
 	return true;

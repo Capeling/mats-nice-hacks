@@ -30,9 +30,11 @@ void PlayerObject::destroyPlayer(bool _idk) {
 		if (MBO(bool, this, 0x3bd)) {
 			particle1->stopSystem();
 		}
+		MBO(bool, this, 0x3bd) = 0;
 		particle2->stopSystem();
 		particle3->stopSystem();
 		particle4->stopSystem();
+		//toggleGhostEffect(static_cast<gd::GhostType>(0));
 		return;
 	}
 	orig<&PlayerObject::destroyPlayer>(this, _idk);

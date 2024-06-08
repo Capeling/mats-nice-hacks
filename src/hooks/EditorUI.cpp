@@ -4,24 +4,23 @@ using namespace matdash;
 
 static bool holdingInEditor = false;
 
-CCPoint* EditorUI::getLimitedPosition(CCPoint* retVal, CCPoint point) {
-	*retVal = point;
-	return retVal;
+CCPoint EditorUI::getLimitedPosition(CCPoint point) {
+	return orig<&EditorUI::getLimitedPosition>(this, point);
 }
 
 void EditorUI::onPlaytest(void* btn) {
 		if (!holdingInEditor)
-			return orig<&EditorUI::onPlaytest>(this, btn);
+	return orig<&EditorUI::onPlaytest>(this, btn);
 }
 
-void EditorUI::ccTouchBegan(void* idc, void* idc2) {
+bool EditorUI::ccTouchBegan_(cocos2d::CCTouch* ccTouch, cocos2d::CCEvent* ccEvent) {
 	holdingInEditor = true;
-	return orig<&EditorUI::ccTouchBegan>(this, idc, idc2);
+	return orig<&EditorUI::ccTouchBegan>(this, ccTouch, ccEvent);
 }
 
-void EditorUI::ccTouchEnded(void* idc, void* idc2) {
+void EditorUI::ccTouchEnded_(cocos2d::CCTouch* ccTouch, cocos2d::CCEvent* ccEvent) {
 	holdingInEditor = false;
-	return orig<&EditorUI::ccTouchEnded>(this, idc, idc2);
+	return orig<&EditorUI::ccTouchEnded>(this, ccTouch, ccEvent);
 }
 
 bool EditorUI::init_(gd::LevelEditorLayer* editor) {
@@ -41,10 +40,10 @@ void EditorUI::dtor() {
 }
 
 void EditorUI::initHooks() {
-	matdash::add_hook<&EditorUI::getLimitedPosition, matdash::Stdcall>(gd::base + 0x4b500);
+	matdash::add_hook<&EditorUI::getLimitedPosition>(gd::base + 0x4b500);
 	matdash::add_hook<&EditorUI::onPlaytest>(gd::base + 0x489c0);
-	matdash::add_hook<&EditorUI::ccTouchBegan>(gd::base + 0x4d5e0);
-	matdash::add_hook<&EditorUI::ccTouchEnded>(gd::base + 0x4de40);
+	//matdash::add_hook<&EditorUI::ccTouchBegan_>(gd::base + 0x4d5e0);
+	//matdash::add_hook<&EditorUI::ccTouchEnded_>(gd::base + 0x4de40);
 	matdash::add_hook<&EditorUI::init_>(gd::base + 0x3fdc0);
 	matdash::add_hook<&EditorUI::dtor>(gd::base + 0x3fb90);
 }

@@ -8,10 +8,10 @@
 
 class EditorUI : public gd::EditorUI {
 public:
-	CCPoint* getLimitedPosition(CCPoint* retVal, CCPoint point);
+	CCPoint getLimitedPosition(CCPoint point);
 	void onPlaytest(void* btn);
-	void ccTouchBegan(void* idc, void* idc2);
-	void ccTouchEnded(void* idc, void* idc2);
+	bool ccTouchBegan_(cocos2d::CCTouch* ccTouch, cocos2d::CCEvent* ccEvent);
+	void ccTouchEnded_(cocos2d::CCTouch* ccTouch, cocos2d::CCEvent* ccEvent);
 	bool init_(gd::LevelEditorLayer* editor);
 	void dtor();
 	static void initHooks();
