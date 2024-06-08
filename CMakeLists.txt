@@ -13,6 +13,10 @@ add_library(${PROJECT_NAME} SHARED
   src/preview-mode.cpp
   src/save-file.cpp
   src/lvl-share.cpp
+  src/Labels.cpp
+  src/hooks/PlayLayer.cpp
+  src/hooks/PlayerObject.cpp
+  src/hooks/EditorUI.cpp
   libraries/nfd/src/nfd_common.c
   libraries/nfd/src/nfd_win.cpp
 )

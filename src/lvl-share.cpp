@@ -8,7 +8,7 @@
 #include <nfd.h>
 
 template <class S>
-void dump_level(GJGameLevel* level, S& stream) {
+void dump_level(gd::GJGameLevel* level, S& stream) {
 	const auto song_key = level->m_songID ?
 		format("<k>k45</k><i>{}</i>", level->m_songID) : 
 			level->m_audioTrack ?
@@ -29,9 +29,9 @@ void dump_level(GJGameLevel* level, S& stream) {
 }
 
 template <class S>
-GJGameLevel* import_level(S& stream) {
+gd::GJGameLevel* import_level(S& stream) {
 	auto data = matplist::parse(stream);
-	auto level = GameLevelManager::sharedState()->createNewLevel();
+	auto level = gd::GameLevelManager::sharedState()->createNewLevel();
 	for (const auto& [key, var] : data) {
 		if (!std::holds_alternative<matplist::Value>(var)) continue;
 		matplist::Value value = std::get<matplist::Value>(var);
@@ -53,21 +53,21 @@ GJGameLevel* import_level(S& stream) {
 	return level;
 }
 
-bool EditLevelLayer_init(EditLevelLayer* self, GJGameLevel* level) {
+bool EditLevelLayer_init(gd::EditLevelLayer* self, gd::GJGameLevel* level) {
 	if (!matdash::orig<&EditLevelLayer_init>(self, level)) return false;
 	auto menu = CCMenu::create();
 	constexpr auto handler = [](CCObject* self, CCObject*) {
-		auto* const level = reinterpret_cast<EditLevelLayer*>(self)->level();
+		auto* const level = reinterpret_cast<gd::EditLevelLayer*>(self)->level();
 		nfdchar_t* path = nullptr;
 		if (NFD_SaveDialog("gmd", nullptr, &path) == NFD_OKAY) {
 			std::ofstream file(path);
 			dump_level(level, file);
 			free(path);
-			FLAlertLayer::create(nullptr, "Success", "The level has been saved", "OK", nullptr, 320.f, false, 0)->show();
+			gd::FLAlertLayer::create(nullptr, "Success", "The level has been saved", "OK", nullptr, 320.f, false, 0)->show();
 		}
 	};
-	auto button = CCMenuItemSpriteExtra::create(
-		ButtonSprite::create("export", 40, 0, 0.5f, false, "goldFont.fnt", "GJ_button_01.png", 30),
+	auto button = gd::CCMenuItemSpriteExtra::create(
+		gd::ButtonSprite::create("export", 40, 0, 0.5f, false, "goldFont.fnt", "GJ_button_01.png", 30),
 		nullptr, self, to_handler<SEL_MenuHandler, handler>
 	);
 	menu->setZOrder(1);
@@ -77,10 +77,10 @@ bool EditLevelLayer_init(EditLevelLayer* self, GJGameLevel* level) {
 	return true;
 }
 
-bool LevelBrowserLayer_init(LevelBrowserLayer* self, GJSearchObject* obj) {
+bool LevelBrowserLayer_init(gd::LevelBrowserLayer* self, gd::GJSearchObject* obj) {
 	if (!matdash::orig<&LevelBrowserLayer_init>(self, obj)) return false;
 
-	if (obj->m_type == SearchType::MyLevels) {
+	if (obj->m_type == gd::SearchType::MyLevels) {
 		auto menu = CCMenu::create();
 		menu->setPosition(CCDirector::sharedDirector()->getWinSize().width - 30.f, 85);
 		self->addChild(menu);
@@ -91,16 +91,16 @@ bool LevelBrowserLayer_init(LevelBrowserLayer* self, GJSearchObject* obj) {
 				auto* const level = import_level(file);
 				free(path);
 				if (!level) {
-					FLAlertLayer::create(nullptr, "Error", "Failed to import", "OK", nullptr, 320.f, false, 0)->show();
+					gd::FLAlertLayer::create(nullptr, "Error", "Failed to import", "OK", nullptr, 320.f, false, 0)->show();
 					return;
 				}
-				auto scene = EditLevelLayer::scene(level);
+				auto scene = gd::EditLevelLayer::scene(level);
 				CCDirector::sharedDirector()->pushScene(scene);
 			}
 		};
 
-		auto button = CCMenuItemSpriteExtra::create(
-			ButtonSprite::create("import", 40, 0, 0.5f, false, "goldFont.fnt", "GJ_button_01.png", 30),
+		auto button = gd::CCMenuItemSpriteExtra::create(
+			gd::ButtonSprite::create("import", 40, 0, 0.5f, false, "goldFont.fnt", "GJ_button_01.png", 30),
 			nullptr, self, to_handler<SEL_MenuHandler, handler>
 		);
 		menu->setZOrder(1);
@@ -111,6 +111,6 @@ bool LevelBrowserLayer_init(LevelBrowserLayer* self, GJSearchObject* obj) {
 }
 
 void lvl_share::init() {
-	matdash::add_hook<&EditLevelLayer_init>(base + 0x3b5a0);
-	matdash::add_hook<&LevelBrowserLayer_init>(base + 0x89590);
+	matdash::add_hook<&EditLevelLayer_init>(gd::base + 0x3b5a0);
+	matdash::add_hook<&LevelBrowserLayer_init>(gd::base + 0x89590);
 }

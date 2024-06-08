@@ -7,7 +7,7 @@
 using namespace matdash;
 
 
-void EditorPauseLayer_saveLevel(EditorPauseLayer* self) {
+void EditorPauseLayer_saveLevel(gd::EditorPauseLayer* self) {
 	println("save level called! ???");
 }
 

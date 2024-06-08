@@ -21,6 +21,8 @@ using i32 = int32_t;
 using u64 = uint64_t;
 using i64 = int64_t;
 
+#define MEMBERBYOFFSET(type, class, offset) *reinterpret_cast<type*>(reinterpret_cast<uintptr_t>(class) + offset)
+#define MBO MEMBERBYOFFSET
 
 namespace {
 	template <class F>
@@ -123,7 +125,7 @@ namespace {
 
 template <auto F>
 auto cocos_symbol(const char* name) {
-	static const auto addr = GetProcAddress((HMODULE)cocos_base, name);
+	static const auto addr = GetProcAddress((HMODULE)gd::cocos_base, name);
 	return reinterpret_cast<typename transform_member_fn_type_idk<decltype(F)>::type>(addr);
 }
 

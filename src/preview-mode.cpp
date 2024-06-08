@@ -18,15 +18,15 @@
 using namespace matdash;
 
 struct CompareTriggers {
-	bool operator()(GameObject* a, GameObject* b) const {
+	bool operator()(gd::GameObject* a, gd::GameObject* b) const {
 		return a->getPosition().x < b->getPosition().x;
 	}
 
-	bool operator()(GameObject* a, float b) const {
+	bool operator()(gd::GameObject* a, float b) const {
 		return a->getPosition().x < b;
 	}
 
-	bool operator()(float a, GameObject* b) const {
+	bool operator()(float a, gd::GameObject* b) const {
 		return a < b->getPosition().x;
 	}
 };
@@ -86,8 +86,8 @@ struct GDColor {
 	GDColor() {}
 	constexpr GDColor(u8 r, u8 g, u8 b, bool blending) : r(r), g(g), b(b), blending(blending) {}
 	constexpr GDColor(const ccColor3B color, bool blending = false) : r(color.r), g(color.g), b(color.b), blending(blending) {}
-	GDColor(GameObject* object) : GDColor(object->triggerColor(), object->triggerBlending()) {}
-	GDColor(SettingsColorObject* color) : GDColor(color->m_color, color->m_blending) {}
+	GDColor(gd::GameObject* object) : GDColor(object->triggerColor(), object->triggerBlending()) {}
+	GDColor(gd::SettingsColorObject* color) : GDColor(color->m_color, color->m_blending) {}
 	operator ccColor3B() const { return { r, g, b }; }
 
 	bool operator==(const GDColor& other) { return std::tie(r, g, b, blending) == std::tie(other.r, other.g, other.b, other.blending); }
@@ -114,11 +114,11 @@ enum class ColorTriggers {
 };
 
 static std::unordered_set<int> color_trigger_ids = { 29, 105, 221, 717, 718, 743, 744 };
-bool is_color_trigger(GameObject* object) {
+bool is_color_trigger(gd::GameObject* object) {
 	return color_trigger_ids.find(object->id()) != color_trigger_ids.end();
 }
 
-void log_obj_vector(const std::vector<GameObject*>& objects) {
+void log_obj_vector(const std::vector<gd::GameObject*>& objects) {
 	std::cout << '[';
 	for (auto obj : objects)
 		std::cout << "id=" << obj << " x=" << obj->getPosition().x << ", ";
@@ -152,11 +152,11 @@ GDColor calculate_lbg(const GDColor& bg_color, const GDColor& p1_color) {
 
 bool was_preview_mode_enabled = false;
 
-class MyEditorLayer : public LevelEditorLayer, public ExtendBase<MyEditorLayer> {
+class MyEditorLayer : public gd::LevelEditorLayer, public ExtendBase<MyEditorLayer> {
 public:
-	Field<std::unordered_map<ColorTriggers, std::vector<GameObject*>>> m_color_triggers;
-	Field<std::unordered_map<CustomColorMode, bool>> m_current_color;
-	Field<std::unordered_set<GameObject*>> m_blending_objs;
+	Field<std::unordered_map<ColorTriggers, std::vector<gd::GameObject*>>> m_color_triggers;
+	Field<std::unordered_map<gd::CustomColorMode, bool>> m_current_color;
+	Field<std::unordered_set<gd::GameObject*>> m_blending_objs;
 	Field<float> m_last_pos;
 	Field<CCSpriteBatchNode*> m_blending_batch_node;
 	static MyEditorLayer* s_instance;
@@ -167,7 +167,7 @@ public:
 		s_instance = nullptr;
 	}
 
-	bool init(GJGameLevel* level) {
+	bool init(gd::GJGameLevel* level) {
 		if (!orig<&MyEditorLayer::init>(this, level)) return false;
 		s_instance = this;
 
@@ -192,7 +192,7 @@ public:
 		return true;
 	}
 
-	void insert_trigger(GameObject* object) {
+	void insert_trigger(gd::GameObject* object) {
 		auto& triggers = (this->*m_color_triggers)[ColorTriggers(object->id())];
 		for (size_t i = 0; i < triggers.size(); ++i) {
 			if (CompareTriggers()(object, triggers[i])) {
@@ -203,7 +203,7 @@ public:
 		triggers.push_back(object);
 	}
 
-	void remove_trigger(GameObject* object) {
+	void remove_trigger(gd::GameObject* object) {
 		auto& triggers = (this->*m_color_triggers)[ColorTriggers(object->id())];
 		for (size_t i = 0; i < triggers.size(); ++i) {
 			if (triggers[i] == object) {
@@ -213,7 +213,7 @@ public:
 		}
 	}
 
-	void move_trigger(GameObject* object) {
+	void move_trigger(gd::GameObject* object) {
 		if (is_color_trigger(object)) {
 			// TODO: just swap it instead of removing and reinserting
 			this->remove_trigger(object);
@@ -229,7 +229,7 @@ public:
 		return std::abs(l->timeForXPos(a) - l->timeForXPos(b));
 	}
 
-	GDColor calculate_color(std::vector<GameObject*> triggers, const float pos, const GDColor starting_color) {
+	GDColor calculate_color(std::vector<gd::GameObject*> triggers, const float pos, const GDColor starting_color) {
 		if (triggers.empty()) return starting_color;
 		auto bound = std::lower_bound(triggers.begin(), triggers.end(), pos, CompareTriggers()) - triggers.begin();
 		if (bound == 0) {
@@ -251,21 +251,21 @@ public:
 		}
 	}
 
-	void addSpecial(GameObject* object) {
+	void addSpecial(gd::GameObject* object) {
 		orig<&MyEditorLayer::addSpecial>(this, object);
 		if (is_color_trigger(object)) {
 			this->insert_trigger(object);
 		}
 	}
 
-	void removeSpecial(GameObject* object) {
+	void removeSpecial(gd::GameObject* object) {
 		orig<&MyEditorLayer::removeSpecial>(this, object);
 		if (is_color_trigger(object)) {
 			this->remove_trigger(object);
 		}
 	}
 
-	void update_object_color(GameObject* object, const GDColor& color) {
+	void update_object_color(gd::GameObject* object, const GDColor& color) {
 		object->setCustomColor(color);
 		CCSprite* node = object;
 		if (object->getHasColor())
@@ -285,7 +285,7 @@ public:
 		}
 	}
 
-	bool is_color_blending(CustomColorMode mode) {
+	bool is_color_blending(gd::CustomColorMode mode) {
 		return (this->*m_current_color)[mode];
 	}
 
@@ -362,14 +362,14 @@ public:
 			*color = this->calculate_color(triggers, pos, starting_color);
 		}
 
-		(this->*m_current_color)[CustomColorMode::Col1] = color1.blending;
-		(this->*m_current_color)[CustomColorMode::Col2] = color2.blending;
-		(this->*m_current_color)[CustomColorMode::Col3] = color3.blending;
-		(this->*m_current_color)[CustomColorMode::Col4] = color4.blending;
+		(this->*m_current_color)[gd::CustomColorMode::Col1] = color1.blending;
+		(this->*m_current_color)[gd::CustomColorMode::Col2] = color2.blending;
+		(this->*m_current_color)[gd::CustomColorMode::Col3] = color3.blending;
+		(this->*m_current_color)[gd::CustomColorMode::Col4] = color4.blending;
 
 		this->backgroundSprite()->setColor(bg_color);
 
-		auto gm = GameManager::sharedState();
+		auto gm = gd::GameManager::sharedState();
 
 		GDColor p1_color(gm->colorForIdx(gm->getPlayerColor()), true);
 		GDColor p2_color(gm->colorForIdx(gm->getPlayerColor2()), true);
@@ -380,7 +380,7 @@ public:
 		auto sections = AwesomeArray<CCArray>(this->getLevelSections());
 		for (auto objects : sections) {
 			if (!objects) continue;
-			for (auto object : AwesomeArray<GameObject>(objects)) {
+			for (auto object : AwesomeArray<gd::GameObject>(objects)) {
 				if (!object || !object->getParent() || object->isSelected()) continue;
 
 				if (object->getIsTintObject())
@@ -388,28 +388,28 @@ public:
 
 				auto mode = object->getColorMode();
 				switch (mode) {
-				case CustomColorMode::DL:
+				case gd::CustomColorMode::DL:
 					this->update_object_color(object, dl_color);
 					break;
-				case CustomColorMode::Col1:
+				case gd::CustomColorMode::Col1:
 					this->update_object_color(object, color1);
 					break;
-				case CustomColorMode::Col2:
+				case gd::CustomColorMode::Col2:
 					this->update_object_color(object, color2);
 					break;
-				case CustomColorMode::Col3:
+				case gd::CustomColorMode::Col3:
 					this->update_object_color(object, color3);
 					break;
-				case CustomColorMode::Col4:
+				case gd::CustomColorMode::Col4:
 					this->update_object_color(object, color4);
 					break;
-				case CustomColorMode::LightBG:
+				case gd::CustomColorMode::LightBG:
 					this->update_object_color(object, lbg_color);
 					break;
-				case CustomColorMode::PlayerCol1:
+				case gd::CustomColorMode::PlayerCol1:
 					this->update_object_color(object, p1_color);
 					break;
-				case CustomColorMode::PlayerCol2:
+				case gd::CustomColorMode::PlayerCol2:
 					this->update_object_color(object, p2_color);
 					break;
 				default:;
@@ -423,23 +423,23 @@ public:
 		auto sections = AwesomeArray<CCArray>(this->getLevelSections());
 		for (auto objects : sections) {
 			if (!objects) continue;
-			for (auto object : AwesomeArray<GameObject>(objects)) {
+			for (auto object : AwesomeArray<gd::GameObject>(objects)) {
 				if (!object || object->isSelected()) continue;
 
 				if (object->getIsTintObject())
 					object->setObjectColor(ccc3(255, 255, 255));
 
 				auto mode = object->getActiveColorMode();
-				const std::unordered_map<CustomColorMode, GDColor> default_colors = {
-					{ CustomColorMode::Default, GDColor(255, 255, 255, false) },
-					{ CustomColorMode::DL, GDColor(255, 255, 0, false) },
-					{ CustomColorMode::Col1, GDColor(255, 150, 255, false) },
-					{ CustomColorMode::Col2, GDColor(255, 255, 150, false) },
-					{ CustomColorMode::Col3, GDColor(150, 255, 255, false) },
-					{ CustomColorMode::Col4, GDColor(150, 255, 150, false) },
-					{ CustomColorMode::LightBG, GDColor(75, 175, 255, false) },
-					{ CustomColorMode::PlayerCol1, GDColor(175, 150, 255, false) },
-					{ CustomColorMode::PlayerCol2, GDColor(255, 150, 150, false) }
+				const std::unordered_map<gd::CustomColorMode, GDColor> default_colors = {
+					{ gd::CustomColorMode::Default, GDColor(255, 255, 255, false) },
+					{ gd::CustomColorMode::DL, GDColor(255, 255, 0, false) },
+					{ gd::CustomColorMode::Col1, GDColor(255, 150, 255, false) },
+					{ gd::CustomColorMode::Col2, GDColor(255, 255, 150, false) },
+					{ gd::CustomColorMode::Col3, GDColor(150, 255, 255, false) },
+					{ gd::CustomColorMode::Col4, GDColor(150, 255, 150, false) },
+					{ gd::CustomColorMode::LightBG, GDColor(75, 175, 255, false) },
+					{ gd::CustomColorMode::PlayerCol1, GDColor(175, 150, 255, false) },
+					{ gd::CustomColorMode::PlayerCol2, GDColor(255, 150, 150, false) }
 				};
 				this->update_object_color(object, default_colors.at(mode));
 			}
@@ -459,18 +459,18 @@ void EditorPauseLayer_dtor(void* self) {
 	orig<&EditorPauseLayer_dtor>(self);
 }
 
-bool GameObject_shouldBlendColor(GameObject* self) {
-	if (GameManager::sharedState()->getPlayLayer())
+bool GameObject_shouldBlendColor(gd::GameObject* self) {
+	if (gd::GameManager::sharedState()->getPlayLayer())
 		return orig<&GameObject_shouldBlendColor>(self);
 	else {
 		auto editor = MyEditorLayer::s_instance;
 		if (!editor) return false;
 
 		switch (self->getColorMode()) {
-		case CustomColorMode::Col1:
-		case CustomColorMode::Col2:
-		case CustomColorMode::Col3:
-		case CustomColorMode::Col4:
+		case gd::CustomColorMode::Col1:
+		case gd::CustomColorMode::Col2:
+		case gd::CustomColorMode::Col3:
+		case gd::CustomColorMode::Col4:
 			return editor->is_color_blending(self->getColorMode());
 		default:;
 		}
@@ -478,14 +478,14 @@ bool GameObject_shouldBlendColor(GameObject* self) {
 	}
 }
 
-void EditorUI_moveObject(EditorUI* self, GameObject* object, CCPoint to) {
+void EditorUI_moveObject(gd::EditorUI* self, gd::GameObject* object, CCPoint to) {
 	orig<&EditorUI_moveObject>(self, object, to);
 	reinterpret_cast<MyEditorLayer*>(self->getParent())->move_trigger(object);
 }
 
-void EditorUI_scrollWheel(EditorUI* _self, float dy, float dx) {
-	auto self = reinterpret_cast<EditorUI*>(reinterpret_cast<uintptr_t>(_self) - 0xf8);
-	auto layer = reinterpret_cast<LevelEditorLayer*>(self->getParent())->gameLayer();
+void EditorUI_scrollWheel(gd::EditorUI* _self, float dy, float dx) {
+	auto self = reinterpret_cast<gd::EditorUI*>(reinterpret_cast<uintptr_t>(_self) - 0xf8);
+	auto layer = reinterpret_cast<gd::LevelEditorLayer*>(self->getParent())->gameLayer();
 	auto zoom = layer->getScale();
 
 	static_assert(offsetof(CCDirector, m_pKeyboardDispatcher) == 0x4c, "it wrong!");
@@ -503,7 +503,7 @@ void EditorUI_scrollWheel(EditorUI* _self, float dy, float dx) {
 	}
 }
 
-void EditorUI_deselectAll(EditorUI* self) {
+void EditorUI_deselectAll(gd::EditorUI* self) {
 	const auto objs = self->getSelectedObjects();
 	orig<&EditorUI_deselectAll>(self);
 	if (!objs.empty() && state().preview_mode) {
@@ -512,7 +512,7 @@ void EditorUI_deselectAll(EditorUI* self) {
 	}
 }
 
-void EditorUI_updateZoom(EditorUI* self, float amt) {
+void EditorUI_updateZoom(gd::EditorUI* self, float amt) {
 	orig<&EditorUI_updateZoom>(self, amt);
 	if (auto editor = MyEditorLayer::s_instance; editor && state().preview_mode) {
 		// y does editor->*m_last_pos not work
@@ -521,19 +521,19 @@ void EditorUI_updateZoom(EditorUI* self, float amt) {
 }
 
 void preview_mode::init() {
-	add_hook<&MyEditorLayer::updateVisibility, Thiscall>(base + 0x8ef20);
-	add_hook<&MyEditorLayer::addSpecial>(base + 0x8ed10);
-	add_hook<&MyEditorLayer::init>(base + 0x8c2c0);
-	add_hook<&MyEditorLayer::dtor>(base + 0x8c080);
-	add_hook<&EditorUI_moveObject>(base + 0x4b410);
-	add_hook<&MyEditorLayer::removeSpecial>(base + 0x8ee30);
+	add_hook<&MyEditorLayer::updateVisibility, Thiscall>(gd::base + 0x8ef20);
+	add_hook<&MyEditorLayer::addSpecial>(gd::base + 0x8ed10);
+	add_hook<&MyEditorLayer::init>(gd::base + 0x8c2c0);
+	add_hook<&MyEditorLayer::dtor>(gd::base + 0x8c080);
+	add_hook<&MyEditorLayer::removeSpecial>(gd::base + 0x8ee30);
 
-	add_hook<&EditorUI_scrollWheel, Thiscall>(base + 0x4ee90);
-	add_hook<&EditorUI_deselectAll>(base + 0x48380);
-	add_hook<&EditorUI_updateZoom>(base + 0x48c30);
+	add_hook<&EditorUI_moveObject>(gd::base + 0x4b410);
+	add_hook<&EditorUI_scrollWheel, Thiscall>(gd::base + 0x4ee90);
+	add_hook<&EditorUI_deselectAll>(gd::base + 0x48380);
+	add_hook<&EditorUI_updateZoom>(gd::base + 0x48c30);
 
-	add_hook<&EditorPauseLayer_init>(base + 0x3e2e0);
-	add_hook<&EditorPauseLayer_dtor>(base + 0x3e280);
+	add_hook<&EditorPauseLayer_init>(gd::base + 0x3e2e0);
+	add_hook<&EditorPauseLayer_dtor>(gd::base + 0x3e280);
 
-	add_hook<&GameObject_shouldBlendColor>(base + 0x6ece0);
+	add_hook<&GameObject_shouldBlendColor>(gd::base + 0x6ece0);
 }

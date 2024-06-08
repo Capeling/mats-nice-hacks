@@ -18,16 +18,16 @@
 #include "lvl-share.hpp"
 #include <cocos-ext.h>
 #include <imgui-hook.hpp>
+#include "hooks/PlayerObject.hpp"
+#include "hooks/PlayLayer.hpp"
+#include "hooks/EditorUI.hpp"
 
 #include <cmath>
 #undef isnan
 
-#define MEMBERBYOFFSET(type, class, offset) *reinterpret_cast<type*>(reinterpret_cast<uintptr_t>(class) + offset)
-#define MBO MEMBERBYOFFSET
-
 using namespace matdash;
 
-cc::stdcall<int> FMOD_setVolume(FMOD::Channel* sound, float v) {
+cc::stdcall<int> FMOD_setVolume(gd::FMOD::Channel* sound, float v) {
 	if (state().speed_hack_enabled && v >= 0.f)
 		sound->setPitch(state().speed);
 	return orig<&FMOD_setVolume>(sound, v);
@@ -36,7 +36,7 @@ cc::stdcall<int> FMOD_setVolume(FMOD::Channel* sound, float v) {
 void CCKeyboardDispatcher_dispatchKeyboardMSG(CCKeyboardDispatcher* self, int key, bool down) {
 	if (down) {
 		if (key == 'R' && state().has_retry_keybind) {
-			auto pl = GameManager::sharedState()->getPlayLayer();
+			auto pl = gd::GameManager::sharedState()->getPlayLayer();
 			if (pl) {
 				pl->resetLevel();
 				return;
@@ -46,34 +46,9 @@ void CCKeyboardDispatcher_dispatchKeyboardMSG(CCKeyboardDispatcher* self, int ke
 	orig<&CCKeyboardDispatcher_dispatchKeyboardMSG>(self, key, down);
 }
 
-CCPoint* EditorUI_getLimitedPosition(CCPoint* retVal, CCPoint point) {
-	*retVal = point;
-	return retVal;
-}
 
-void PlayLayer_spawnPlayer2(PlayLayer* self) {
-	self->player2()->setVisible(true);
-	orig<&PlayLayer_spawnPlayer2>(self);
-}
 
-static bool g_holding_in_editor = false;
-
-void EditorUI_onPlaytest(EditorUI* self, void* btn) {
-	if (!g_holding_in_editor)
-		return orig<&EditorUI_onPlaytest>(self, btn);
-}
-
-void EditorUI_ccTouchBegan(EditorUI* self, void* idc, void* idc2) {
-	g_holding_in_editor = true;
-	return orig<&EditorUI_ccTouchBegan>(self, idc, idc2);
-}
-
-void EditorUI_ccTouchEnded(EditorUI* self, void* idc, void* idc2) {
-	g_holding_in_editor = false;
-	return orig<&EditorUI_ccTouchEnded>(self, idc, idc2);
-}
-
-bool ColorSelectPopup_init(ColorSelectPopup* self, GameObject* obj, int color_id, int idk, int idk2) {
+bool ColorSelectPopup_init(gd::ColorSelectPopup* self, gd::GameObject* obj, int color_id, int idk, int idk2) {
 	state().should_fix_hue = true;
 	if (!orig<&ColorSelectPopup_init>(self, obj, color_id, idk, idk2)) return false;
 
@@ -81,13 +56,13 @@ bool ColorSelectPopup_init(ColorSelectPopup* self, GameObject* obj, int color_id
 	auto winSize = director->getWinSize();
 
 	constexpr auto handler = [](CCObject* _self, CCObject* button) {
-		auto self = reinterpret_cast<ColorSelectPopup*>(_self);
+		auto self = reinterpret_cast<gd::ColorSelectPopup*>(_self);
 		auto picker = self->colorPicker();
 		state().color_picker = picker;
 	};
-	auto sprite = ButtonSprite::create("picker", 0x28, 0, 0.6f, true, "goldFont.fnt", "GJ_button_04.png", 30.0);
+	auto sprite = gd::ButtonSprite::create("picker", 0x28, 0, 0.6f, true, "goldFont.fnt", "GJ_button_04.png", 30.0);
 
-	auto button = CCMenuItemSpriteExtra::create(sprite, nullptr, self, to_handler<SEL_MenuHandler, handler>);
+	auto button = gd::CCMenuItemSpriteExtra::create(sprite, nullptr, self, to_handler<SEL_MenuHandler, handler>);
 	const auto win_size = CCDirector::sharedDirector()->getWinSize();
 	const auto menu = self->menu();
 	button->setPosition(menu->convertToNodeSpace({ win_size.width - 50.f, win_size.height - 110 }));
@@ -96,22 +71,22 @@ bool ColorSelectPopup_init(ColorSelectPopup* self, GameObject* obj, int color_id
 	return true;
 }
 
-void ColorSelectPopup_dtor(ColorSelectPopup* self) {
+void ColorSelectPopup_dtor(gd::ColorSelectPopup* self) {
 	state().should_fix_hue = false;
 	orig<&ColorSelectPopup_dtor>(self);
 }
 
-void EditorPauseLayer_customSetup(EditorPauseLayer* self) {
+void EditorPauseLayer_customSetup(gd::EditorPauseLayer* self) {
 	orig<&EditorPauseLayer_customSetup>(self);
 
 	constexpr auto handler = [](CCObject* self, CCObject*) {
 		auto text = clipboard::read();
-		auto editor = reinterpret_cast<LevelEditorLayer*>(reinterpret_cast<CCNode*>(self)->getParent());
+		auto editor = reinterpret_cast<gd::LevelEditorLayer*>(reinterpret_cast<CCNode*>(self)->getParent());
 		editor->editorUI()->pasteObjects(text);
 	};
 
-	auto sprite = ButtonSprite::create("paste string", 0x28, 0, 0.6f, true, "goldFont.fnt", "GJ_button_04.png", 30.0);
-	auto button = CCMenuItemSpriteExtra::create(sprite, nullptr, self, to_handler<SEL_MenuHandler, handler>);
+	auto sprite = gd::ButtonSprite::create("paste string", 0x28, 0, 0.6f, true, "goldFont.fnt", "GJ_button_04.png", 30.0);
+	auto button = gd::CCMenuItemSpriteExtra::create(sprite, nullptr, self, to_handler<SEL_MenuHandler, handler>);
 	const auto win_size = CCDirector::sharedDirector()->getWinSize();
 	auto menu = CCMenu::create();
 	menu->setPosition({0, 0});
@@ -120,66 +95,51 @@ void EditorPauseLayer_customSetup(EditorPauseLayer* self) {
 	self->addChild(menu);
 }
 
-void AppDelegate_trySaveGame(AppDelegate* self) {
+void AppDelegate_trySaveGame(gd::AppDelegate* self) {
 	orig<&AppDelegate_trySaveGame>(self);
 
 	state().save();
 }
 
-bool EditorUI_init(EditorUI* self, LevelEditorLayer* editor) {
-	if (!orig<&EditorUI_init>(self, editor)) return false;
 
-	if (!state().saved_clipboard.empty()) {
-		self->clipboard() = state().saved_clipboard;
-		self->updateButtons();
-	}
-
-	return true;
-}
-
-void EditorUI_dtor(EditorUI* self) {
-	state().saved_clipboard = self->clipboard();
-	orig<&EditorUI_dtor>(self);
-}
-
-void LevelInfoLayer_onClone(LevelInfoLayer* self, CCObject* foo) {
+void LevelInfoLayer_onClone(gd::LevelInfoLayer* self, CCObject* foo) {
 	orig<&LevelInfoLayer_onClone>(self, foo);
 	if (!self->shouldDownloadLevel()) {
-		auto level = static_cast<GJGameLevel*>(LocalLevelManager::sharedState()->getLocalLevels()->objectAtIndex(0));
+		auto level = static_cast<gd::GJGameLevel*>(gd::LocalLevelManager::sharedState()->getLocalLevels()->objectAtIndex(0));
 		level->songID() = self->level()->songID();
 	}
 }
 
-void EditLevelLayer_onClone(EditLevelLayer* self) {
+void EditLevelLayer_onClone(gd::EditLevelLayer* self) {
 	orig<&EditLevelLayer_onClone>(self);
 	// gd checks for this->field_0x130 == 0, but i have no idea what that is nor do i care
-	auto level = static_cast<GJGameLevel*>(LocalLevelManager::sharedState()->getLocalLevels()->objectAtIndex(0));
+	auto level = static_cast<gd::GJGameLevel*>(gd::LocalLevelManager::sharedState()->getLocalLevels()->objectAtIndex(0));
 	level->songID() = self->level()->songID();
 }
 
-bool CustomizeObjectLayer_init(CustomizeObjectLayer* self, GameObject* obj, CCArray* objs) {
+bool CustomizeObjectLayer_init(gd::CustomizeObjectLayer* self, gd::GameObject* obj, CCArray* objs) {
 	if (!orig<&CustomizeObjectLayer_init>(self, obj, objs)) return false;
 	
-	auto sprite = ButtonSprite::create("3DL", 0xdc, 0, 0.4, false, "bigFont.fnt", "GJ_button_04.png", 25.0);
-	auto button = CCMenuItemSpriteExtra::create(sprite, nullptr, self, union_cast<SEL_MenuHandler>(base + 0x2e600));
-	button->setTag(static_cast<int>(CustomColorMode::DL));
+	auto sprite = gd::ButtonSprite::create("3DL", 0xdc, 0, 0.4, false, "bigFont.fnt", "GJ_button_04.png", 25.0);
+	auto button = gd::CCMenuItemSpriteExtra::create(sprite, nullptr, self, union_cast<SEL_MenuHandler>(gd::base + 0x2e600));
+	button->setTag(static_cast<int>(gd::CustomColorMode::DL));
 	button->setPosition(100, 0);
 	from<CCArray*>(self, 0x1c4)->addObject(sprite);
 	self->menu()->addChild(button);
 
-	if (obj && obj->getColorMode() == CustomColorMode::DL) {
+	if (obj && obj->getColorMode() == gd::CustomColorMode::DL) {
 		self->hightlightSelected(sprite);
 	}
 
 	return true;
 }
 
-void MenuLayer_onMoreGames(MenuLayer* self, CCObject* sender) {
-	const auto layer = FLAlertLayer::create(nullptr, "Success", "The level has been saved", "OK", nullptr, 320.f, false, 0);
+void MenuLayer_onMoreGames(gd::MenuLayer* self, CCObject* sender) {
+	const auto layer = gd::FLAlertLayer::create(nullptr, "Test", "", "OK", nullptr, 320.f, false, 0);
 	layer->show();
 }
 
-bool LevelSelectLayer_init(LevelSelectLayer* self, int page) {
+bool LevelSelectLayer_init(gd::LevelSelectLayer* self, int page) {
 	return orig<&LevelSelectLayer_init>(self, page);
 }
 
@@ -187,14 +147,13 @@ static gd::string LevelTools_getAudioTitle(int audioID) {
 	return std::string("hello");
 }
 
-GJGameLevel* LevelTools_getLevel(int levelID, bool __save) {
+gd::GJGameLevel* LevelTools_getLevel(int levelID, bool __save) {
 	return orig<&LevelTools_getLevel>(levelID, __save);
 }
 
-bool GJGarageLayer_init(GJGarageLayer* self) {
+bool GJGarageLayer_init(gd::GJGarageLayer* self) {
 	return orig<&GJGarageLayer_init>(self);
 }
-
 
 matdash::cc::c_decl<cocos2d::extension::RGBA> cocos_hsv2rgb(cocos2d::extension::HSV color) {
 	if ((state().should_fix_hue || state().always_fix_hue) && std::isnan(color.h))
@@ -202,342 +161,8 @@ matdash::cc::c_decl<cocos2d::extension::RGBA> cocos_hsv2rgb(cocos2d::extension::
 	return orig<&cocos_hsv2rgb>(color);
 }
 
-void PlayerObject_updatePlayerFrame(PlayerObject* self, int frameID) {
-	if(state().use_mini_icon) return orig<&PlayerObject_updatePlayerFrame>(self, 0);
-	orig<&PlayerObject_updatePlayerFrame>(self, frameID);
-}
-
-void PlayerObject_updatePlayerRollFrame(PlayerObject* self, int frameID) {
-	if(state().use_mini_icon) return orig<&PlayerObject_updatePlayerRollFrame>(self, 0);
-	orig<&PlayerObject_updatePlayerRollFrame>(self, frameID);
-}
-
-bool PlayerObject_init(PlayerObject* self, int frame, int type, int idk) {
-	auto init = orig<&PlayerObject_init>(self, frame, type, idk);
-	if(state().use_mini_icon) orig<&PlayerObject_updatePlayerFrame>(self, 0);
-	return init;
-}
-
-int labelCount = 0;
-float updateRgb = 0.0f;
-
-CCMenu* labelMenu = nullptr;
-
-CCLabelBMFont* fpsLabel = nullptr;
-CCLabelBMFont* attemptsLabel = nullptr;
-CCLabelBMFont* cpsLabel = nullptr;
-CCLabelBMFont* bestRunLabel = nullptr;
-
-std::vector<time_t> s_clickFrames;
-int totalClicks = 0;
-bool isHolding = false;
-
-void updateLabelPositions() {
-
-	auto director = CCDirector::sharedDirector();
-	auto winSize = director->getWinSize();
-
-	for(int i = 0; i < labelMenu->getChildrenCount(); i++) {
-		auto node = static_cast<CCNode*>(labelMenu->getChildren()->objectAtIndex(i));
-		node->setPositionY(0 - (i * (17 * (state().status_scale * 2))));
-		node->setScale(state().status_scale);
-	}
-	labelMenu->setPosition({director->getScreenLeft() + (state().status_scale * 10), director->getScreenTop() - ((state().status_scale * 10) * 2)});
-}
-
-CCLabelBMFont* createStandardLabel() {
-	auto label = CCLabelBMFont::create("", "bigFont.fnt");
-	label->setAnchorPoint({0.f, 0.5f});
-	label->setScale(0.5f);
-	label->setOpacity(255 / 2);
-	labelCount++;
-    return label;
-}
-
-void createFpsLabel(PlayLayer* self) {
-	fpsLabel = createStandardLabel();
-	fpsLabel->setZOrder(0);
-	labelMenu->addChild(fpsLabel);
-}
-
-void createCpsLabel(PlayLayer* self) {
-	cpsLabel = createStandardLabel();
-	cpsLabel->setZOrder(1);
-	labelMenu->addChild(cpsLabel);
-}
-
-void createBestRunLabel(PlayLayer* self) {
-	bestRunLabel = createStandardLabel();
-	bestRunLabel->setZOrder(2);
-	labelMenu->addChild(bestRunLabel);
-}
-
-void createAttemptsLabel(PlayLayer* self) {
-	attemptsLabel = createStandardLabel();
-	attemptsLabel->setZOrder(3);
-	labelMenu->addChild(attemptsLabel);
-}
-
-void updateAttemptLabel(PlayLayer* self) {
-    if(attemptsLabel) {
-        int attemptCount = self->attemptsCount() + 1;
-        attemptsLabel->setString(CCString::createWithFormat("Attempt %i", attemptCount)->getCString());
-    }
-}
-
-void updateBestRunLabel(PlayLayer* self) {
-    if(bestRunLabel) {
-        bestRunLabel->setString(CCString::createWithFormat("Best run: %i%%", self->getNewBest())->getCString());
-    }
-}
-
-
-void updateLabels(PlayLayer* self) {
-
-	auto director = CCDirector::sharedDirector();
-
-	if(labelMenu) {
-		if(state().fps_label && !fpsLabel) {
-			createFpsLabel(self);
-		}
-
-		if(state().cps_label && !cpsLabel) {
-			createCpsLabel(self);
-		}
-
-		if(state().best_run && !bestRunLabel) {
-			createBestRunLabel(self);
-			updateBestRunLabel(self);
-		}
-
-		if(state().attempts_label && !attemptsLabel) {
-			createAttemptsLabel(self);
-            updateAttemptLabel(self);
-		}
-
-
-		if(fpsLabel) {
-			std::string prefix; 
-			if(state().fps_prefix) 
-				prefix= "fps: ";
-			fpsLabel->setString((prefix + std::to_string(static_cast<int>(ImGui::GetIO().Framerate))).c_str());
-			if(!state().fps_label) {
-				fpsLabel->removeFromParent();
-				fpsLabel = nullptr;
-				labelCount--;
-			}
-		}
-
-
-        if(cpsLabel) {
-			std::string cpsCurrent = CCString::createWithFormat("%i", s_clickFrames.size())->getCString();
-			std::string cpsTotal;
-			if(state().cps_total) 
-				cpsTotal = CCString::createWithFormat("/%i", totalClicks)->getCString();
-			std::string prefix; 
-			if(state().cps_prefix) 
-				prefix= "cps: ";
-
-            cpsLabel->setString(std::string(prefix + cpsCurrent + cpsTotal).c_str());
-			if(isHolding) {
-				cpsLabel->setColor({0, 255, 0});
-			} else {
-				cpsLabel->setColor({255, 255, 255});
-			}
-			if(!state().cps_label) {
-				cpsLabel->removeFromParent();
-				cpsLabel = nullptr;
-				labelCount--;
-			}
-        }
-
-        if(!state().attempts_label && attemptsLabel) {
-            attemptsLabel->removeFromParent();
-			attemptsLabel = nullptr;
-            labelCount--;
-        }
-
-        if(!state().best_run && bestRunLabel) {
-            bestRunLabel->removeFromParent();
-			bestRunLabel = nullptr;
-            labelCount--;
-        }
-		
-	}
-}
-
-void PlayLayer_resetLevel(PlayLayer* self) {
-    s_clickFrames.clear();
-	totalClicks = 0;
-    orig<&PlayLayer_resetLevel>(self);
-}
-
-bool hasClicked = false;
-
-void PlayLayer_pushButton(PlayLayer* self, int idk1, bool idk2) {
-	isHolding = true;
-    if (!hasClicked) {
-        s_clickFrames.push_back(time::getTime());
-		totalClicks++;
-        hasClicked = true;
-    }
-    orig<&PlayLayer_pushButton>(self, idk1, idk2);
-}
-
-void PlayLayer_releaseButton(PlayLayer* self, int idk1, bool idk2) {
-	isHolding = false;
-    orig<&PlayLayer_releaseButton>(self, idk1, idk2);
-}
-
-bool PlayLayer_init(PlayLayer* self, GJGameLevel* level) {
-	if (!orig<&PlayLayer_init>(self, level)) return false;
-	labelCount = 0;
-	totalClicks = 0;
-	s_clickFrames.clear();
-
-	auto director = CCDirector::sharedDirector();
-	auto winSize = director->getWinSize();
-
-	labelMenu = CCMenu::create();
-	labelMenu->setZOrder(999999);
-
-	self->addChild(labelMenu);
-
-	if(state().fps_label) {
-		createFpsLabel(self);
-	}
-	if(state().cps_label) {
-		createCpsLabel(self);
-	}
-	if(state().best_run) {
-		createBestRunLabel(self);
-		updateBestRunLabel(self);
-	}
-	if(state().attempts_label) {
-		createAttemptsLabel(self);
-		updateAttemptLabel(self);
-	}
-
-
-	if (state().show_percent) {
-		auto gm = GameManager::sharedState();
-		const auto bar = gm->getShowProgressBar();
-
-		auto label = CCLabelBMFont::create("0.00%", "bigFont.fnt");
-		label->setAnchorPoint({ bar ? 0.f : 0.5f, 0.5f });
-		label->setScale(0.5f);
-		label->setZOrder(999999);
-		label->setPosition({ winSize.width / 2.f + (bar ? 107.2f : 0.f), winSize.height - 8.f });
-		label->setTag(12345);
-		self->addChild(label);
-	}
-	if(state().hide_attempts) {
-		self->attemptsLabel()->setVisible(false);
-	}
-
-	updateLabels(self);
-	updateLabelPositions();
-
-	return true;
-}
-
-ccColor3B getChromaColour() {
-	return ColorUtility::hsvToRgb(cchsv((updateRgb * 180) / 10.0f, 1.0f, 1.0f, true, true));
-}
-
-ccColor4F getChromaColour4() {
-	auto color3b = ColorUtility::hsvToRgb(cchsv((updateRgb * 180) / 10.0f, 1.0f, 1.0f, true, true));
-	return ccColor4F(color3b.r, color3b.g, color3b.b, 255);
-}
-
-
-void PlayLayer_updateAttempts(PlayLayer* self) {
-	updateAttemptLabel(self);
-	orig<&PlayLayer_updateAttempts>(self);
-}
-
-void PlayLayer_destroyPlayer(PlayLayer* self, PlayerObject* PlayerObject) {
-	orig<&PlayLayer_destroyPlayer>(self, PlayerObject);
-	updateBestRunLabel(self);
-}
-
-void PlayerObject_destroyPlayer(PlayerObject* self, bool _idk) {
-	if(state().no_death_effect) {
-		self->stopActionByTag(0);
-		self->stopActionByTag(1);
-		auto particle1 = MBO(CCParticleSystemQuad*, self, 0x40c);
-		auto particle2 = MBO(CCParticleSystemQuad*, self, 0x410);
-		auto particle3 = MBO(CCParticleSystemQuad*, self, 0x414);
-		auto particle4 = MBO(CCParticleSystemQuad*, self, 0x418);
-		if(MBO(bool, self, 0x3bd)) {
-			particle1->stopSystem();
-		}
-		particle2->stopSystem();
-		particle3->stopSystem();
-		particle4->stopSystem();
-		return;
-	}
-	orig<&PlayerObject_destroyPlayer>(self, _idk);
-}
-
-cc::thiscall<void> PlayLayer_update(PlayLayer* self, float dt) {
-	orig<&PlayLayer_update>(self, dt);
-	auto label = self->getChildByTag(12345);
-	if (label) {
-		const auto value = std::min(self->player1()->getPositionX() / self->levelLength(), 1.f) * 100.f;
-		reinterpret_cast<CCLabelBMFont*>(label)->setString(CCString::createWithFormat("%.2f%%", value)->getCString());
-	}
-
-	updateLabels(self);
-	updateLabelPositions();
-
-	if (state().rainbow_color) { //nobody has to know
-
-		auto player1 = self->player1();
-		auto player2 = self->player2();
-
-		auto playerGlowNode = self->playerGlowNode();
-
-		updateRgb += dt * state().rainbow_speed;
-
-		for(size_t i = 0; i < player1->getChildrenCount(); i++) {
-			auto node = static_cast<CCSprite*>(player1->getChildren()->objectAtIndex(i));
-			node->setColor(getChromaColour());
-		}
-
-		for(size_t i = 0; i < player2->getChildrenCount(); i++) {
-			auto node = static_cast<CCSprite*>(player2->getChildren()->objectAtIndex(i));
-			for(size_t i = 0; i < node->getChildrenCount(); i++) {
-				auto node2 = static_cast<CCSprite*>(node->getChildren()->objectAtIndex(i));
-				node2->setColor(getChromaColour());
-			}
-		}
-		
-		if(auto player2Glow = static_cast<CCSprite*>(playerGlowNode->getChildren()->objectAtIndex(playerGlowNode->getChildrenCount()))) {
-			for(size_t i = 0; i < player2Glow->getChildrenCount(); i++) {
-				auto node = static_cast<CCSprite*>(player2Glow->getChildren()->objectAtIndex(i));
-				node->setColor(getChromaColour());
-			}
-		};
-	}
-
-	// sick
-	if (state().hide_player) {
-		self->player1()->setVisible(false);
-		self->player2()->setVisible(false);
-	}
-
-	time_t currentTick = time::getTime();
-	s_clickFrames.erase(std::remove_if(s_clickFrames.begin(), s_clickFrames.end(), [currentTick](float tick) {
-		return currentTick - tick > 1000;
-	}), s_clickFrames.end());
-
-	hasClicked = false;
-	return {};
-}
-
 void mod_main(HMODULE) {
-	//static Console console;
+	static Console console;
 	std::cout << std::boolalpha;
 
 	state().load();
@@ -553,57 +178,36 @@ void mod_main(HMODULE) {
 
 	auto cocos = GetModuleHandleA("libcocos2d.dll");
 	auto cocos_ext = GetModuleHandleA("libExtensions.dll");
-	add_hook<&FMOD_setVolume>(GetProcAddress(FMOD::base, "?setVolume@ChannelControl@FMOD@@QAG?AW4FMOD_RESULT@@M@Z"));
+	add_hook<&FMOD_setVolume>(GetProcAddress(gd::FMOD::base, "?setVolume@ChannelControl@FMOD@@QAG?AW4FMOD_RESULT@@M@Z"));
 	add_hook<&CCKeyboardDispatcher_dispatchKeyboardMSG>(GetProcAddress(cocos, "?dispatchKeyboardMSG@CCKeyboardDispatcher@cocos2d@@QAE_NW4enumKeyCodes@2@_N@Z"));
 	// add_hook<&MenuLayer_init>(base + 0xaf210);
-	add_hook<&EditorUI_getLimitedPosition, matdash::Stdcall>(base + 0x4b500);
-
-	// for invisible dual fix (thx pie)
-	add_hook<&PlayLayer_spawnPlayer2>(base + 0xef0d0);
 
 	// for freeze fix (thx cos8o)
-	add_hook<&EditorUI_onPlaytest>(base + 0x489c0);
-	add_hook<&EditorUI_ccTouchBegan>(base + 0x4d5e0);
-	add_hook<&EditorUI_ccTouchEnded>(base + 0x4de40);
 
-	add_hook<&AppDelegate_trySaveGame>(base + 0x293f0);
+	add_hook<&AppDelegate_trySaveGame>(gd::base + 0x293f0);
 
-	add_hook<&PlayLayer_init>(base + 0xe35d0);
-	add_hook<&PlayLayer_update>(base + 0xe9360);
-	add_hook<&PlayLayer_updateAttempts>(base + 0xf33a0);
-	add_hook<&PlayLayer_resetLevel>(base + 0xf1f20);
-	add_hook<&PlayLayer_pushButton>(base + 0xf0a00);
-	add_hook<&PlayLayer_releaseButton>(base + 0xf0af0);
-	add_hook<&PlayLayer_destroyPlayer>(base + 0xf04a0);
+	add_hook<&ColorSelectPopup_init>(gd::base + 0x29db0);
+	add_hook<&ColorSelectPopup_dtor>(gd::base + 0x2b050);
 
-	add_hook<&ColorSelectPopup_init>(base + 0x29db0);
-	add_hook<&ColorSelectPopup_dtor>(base + 0x2b050);
+	add_hook<&EditorPauseLayer_customSetup>(gd::base + 0x3e3d0);
 
-	add_hook<&EditorPauseLayer_customSetup>(base + 0x3e3d0);
 
-	add_hook<&EditorUI_init>(base + 0x3fdc0);
-	add_hook<&EditorUI_dtor>(base + 0x3fb90);
+	add_hook<&LevelInfoLayer_onClone>(gd::base + 0x9e2c0);
+	add_hook<&EditLevelLayer_onClone>(gd::base + 0x3da30);
 
-	add_hook<&LevelInfoLayer_onClone>(base + 0x9e2c0);
-	add_hook<&EditLevelLayer_onClone>(base + 0x3da30);
-
-	add_hook<&CustomizeObjectLayer_init>(base + 0x2dc70);
-
-	add_hook<&PlayerObject_init>(base + 0xd8ca0);
-	add_hook<&PlayerObject_updatePlayerFrame>(base + 0xdfff0);
-	add_hook<&PlayerObject_updatePlayerRollFrame>(base + 0xe0430);
-	add_hook<&PlayerObject_destroyPlayer>(base + 0xddda0);
-
-	add_hook<&GJGarageLayer_init>(base + 0x7c5c0);
+	add_hook<&CustomizeObjectLayer_init>(gd::base + 0x2dc70);
 
 	//add_hook<&LevelTools_getAudioTitle>(base + 0xa9ad0);
 	//add_hook<&LevelTools_getLevel>(base + 0xa9280);
 
 	add_hook<&cocos_hsv2rgb>(GetProcAddress(cocos_ext, "?RGBfromHSV@CCControlUtils@extension@cocos2d@@SA?AURGBA@23@UHSV@23@@Z"));
 
-	// add_hook<&MenuLayer_onMoreGames>(base + 0xb0070);
+	add_hook<&MenuLayer_onMoreGames>(gd::base + 0xb0070);
 
 	preview_mode::init();
+	PlayLayer::initHooks();
+	PlayerObject::initHooks();
+	EditorUI::initHooks();
 	// save_file::init();
 	lvl_share::init();
 
@@ -611,12 +215,12 @@ void mod_main(HMODULE) {
 
 	// patches for the editor extension
 
-	patch(base + 0x4ca75, { 0xeb });
-	patch(base + 0x4ca45, { 0xeb });
-	patch(base + 0x4779c, { 0xeb });
-	patch(base + 0x477b9, { 0xeb });
+	patch(gd::base + 0x4ca75, { 0xeb });
+	patch(gd::base + 0x4ca45, { 0xeb });
+	patch(gd::base + 0x4779c, { 0xeb });
+	patch(gd::base + 0x477b9, { 0xeb });
 
-	patch(base + 0x4b445, { 0xeb, 0x44 });
+	patch(gd::base + 0x4b445, { 0xeb, 0x44 });
 
 	//patch(base + 0xf05d0, { 0x90, 0x90, 0x90, 0x90, 0x90 });
 	//patch(base + 0xf05f4, { 0x90, 0x90, 0x90, 0x90, 0x90 });

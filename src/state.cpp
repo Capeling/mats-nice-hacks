@@ -34,7 +34,11 @@ void StateStruct::load() {
 					value = str == "true";
 				} else if constexpr (std::is_same_v<type, float>) {
 					value = std::stof(str);
-				} else {
+				} else if constexpr (std::is_same_v<type, int>) {
+					value = std::stoi(str);
+				} else if constexpr (std::is_same_v<type, std::string>) {
+					value = str;
+				}  else {
 					static_assert(!std::is_same_v<type, type>, "unsupported type");
 				}
 			}
@@ -52,6 +56,10 @@ void StateStruct::save() {
 		if constexpr (std::is_same_v<type, bool>) {
 			file << (value ? "true" : "false");
 		} else if constexpr (std::is_same_v<type, float>) {
+			file << value;
+		} else if constexpr (std::is_same_v<type, int>) {
+			file << value;
+		} else if constexpr (std::is_same_v<type, std::string>) {
 			file << value;
 		} else {
 			static_assert(!std::is_same_v<type, type>, "unsupported type");
