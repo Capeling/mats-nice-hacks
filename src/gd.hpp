@@ -122,12 +122,21 @@ namespace gd {
 		}
 
 		int getPlayerFrame() {
-			return from<int>(this, 0x284);
+			return from<int>(this, 0x1b0);
+		}
+
+		int getPlayerShip() {
+			return from<int>(this, 0x1b4);
 		}
 
 		int getPlayerBall() {
-			return from<int>(this, 0x294);
+			return from<int>(this, 0x1b8);
 		}
+
+		int getPlayerBird() {
+			return from<int>(this, 0x1bc);
+		}
+
 
 		IconType getPlayerType() {
 			return from<IconType>(this, 0x2b4);

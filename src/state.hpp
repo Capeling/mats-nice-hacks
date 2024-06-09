@@ -37,7 +37,9 @@ struct StateStruct {
 	bool rainbow_color = false;
 	bool use_mini_icon = false;
 	bool no_death_effect = false;
-
+	bool no_mini_icon = false;
+	
+	int status_opacity = 125;
 	float status_scale = 1.f;
 	bool fps_label = false;
 	bool attempts_label = false;
@@ -68,6 +70,6 @@ DEF_SCHEMA(StateStruct, speed, has_retry_keybind,
 	no_transition, no_trail, no_wave_trail, solid_wave_trail,
 	no_particles, copy_hack, fps_bypass, fps,
 	hide_practice, show_percent, verify_hack,
-	hide_attempts, edit_level, hide_trigger_lines, hide_grid, rainbow_color, rainbow_speed, use_mini_icon,
-	fps_label, attempts_label, cps_label, cps_prefix, cps_total, fps_prefix, best_run, status_scale, no_death_effect, message, message_text,
+	hide_attempts, edit_level, hide_trigger_lines, hide_grid, rainbow_color, rainbow_speed, use_mini_icon, no_mini_icon,
+	fps_label, attempts_label, cps_label, cps_prefix, cps_total, fps_prefix, best_run, status_scale, no_death_effect, message, message_text, status_opacity,
 	smooth_editor_trail, always_fix_hue)

@@ -129,6 +129,7 @@ void imgui_render() {
 				ImGui::SameLine();
 				ImGui::Checkbox("Rainbow icon", &state().rainbow_color);
 				ImGui::Checkbox("Use mini icon", &state().use_mini_icon);
+				ImGui::Checkbox("No mini icon", &state().no_mini_icon);
 				ImGui::TreePop();
 			}
 			if(ImGui::TreeNode("Editor")) {
@@ -152,8 +153,11 @@ void imgui_render() {
 				ImGui::TreePop();
 			}
 			if(ImGui::TreeNode("Status labels")) {
-				ImGui::SetNextItemWidth(120);
+				ImGui::SetNextItemWidth(60);
 				ImGui::DragFloat("Scale", &state().status_scale, 0.01f, 0.1f, 2.f);
+				ImGui::SameLine();
+				ImGui::SetNextItemWidth(60);
+				ImGui::DragInt("Opacity", &state().status_opacity, 1.f, 0, 255);
 				ImGui::SetNextItemWidth(120);
 				ImGui::InputText("##message", &state().message_text);
 					ImGui::SameLine();

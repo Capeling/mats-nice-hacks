@@ -4,17 +4,28 @@
 using namespace matdash;
 
 void PlayerObject::updatePlayerFrame(int frameID) {
+	auto GM = gd::GameManager::sharedState();
+
 	if (state().use_mini_icon) return orig<&PlayerObject::updatePlayerFrame>(this, 0);
+
+	if (state().no_mini_icon) return orig<&PlayerObject::updatePlayerFrame>(this, GM->getPlayerFrame());
+
 	orig<&PlayerObject::updatePlayerFrame>(this, frameID);
 }
 
 void PlayerObject::updatePlayerRollFrame(int frameID) {
+	auto GM = gd::GameManager::sharedState();
+
 	if (state().use_mini_icon) return orig<&PlayerObject::updatePlayerRollFrame>(this, 0);
+
+	if(state().no_mini_icon) return orig<&PlayerObject::updatePlayerRollFrame>(this, GM->getPlayerBall());
+
 	orig<&PlayerObject::updatePlayerRollFrame>(this, frameID);
 }
 
 bool PlayerObject::init_(int frame, int type, CCLayer* layer) {
 	auto init = orig<&PlayerObject::init_>(this, frame, type, layer);
+	orig<&PlayerObject::updatePlayerFrame>(this, frame);
 	if (state().use_mini_icon) orig<&PlayerObject::updatePlayerFrame>(this, 0);
 	return init;
 }

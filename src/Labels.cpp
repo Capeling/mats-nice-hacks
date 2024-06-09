@@ -1,5 +1,6 @@
 #include "Labels.hpp"
 #include <imgui-hook.hpp>
+#include "matdash/console.hpp"
 
 using namespace matdash;
 
@@ -8,7 +9,8 @@ void Labels::updateLabelPositions() {
 	auto winSize = director->getWinSize();
 
 	for (int i = 0; i < m_labelMenu->getChildrenCount(); i++) {
-		auto node = static_cast<CCNode*>(m_labelMenu->getChildren()->objectAtIndex(i));
+		auto node = static_cast<CCLabelBMFont*>(m_labelMenu->getChildren()->objectAtIndex(i));
+		node->setOpacity(state().status_opacity);
 		node->setPositionY(0 - (i * (17 * (state().status_scale * 2))));
 		node->setScale(state().status_scale);
 	}
@@ -19,7 +21,7 @@ CCLabelBMFont* Labels::createStandardLabel() {
 	auto label = CCLabelBMFont::create("Label", "bigFont.fnt");
 	label->setAnchorPoint({ 0.f, 0.5f });
 	label->setScale(0.5f);
-	label->setOpacity(255 / 2);
+	label->setOpacity(state().status_opacity);
 	m_labelCount++;
 	return label;
 }

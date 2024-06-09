@@ -81,6 +81,13 @@ void render_node_properties(CCNode* node) {
 		ImGui::DragFloat2("Content Size", (float*)&value);
 		if (value != node->getContentSize()) node->setContentSize(value);
 	}
+	{
+		if (auto newNode = dynamic_cast<CCRGBAProtocol*>(node)) { 
+			auto value = newNode->getOpacity();
+			ImGui::DragFloat("Opacity", (float*)&value);
+			if (value != newNode->getOpacity()) newNode->setOpacity(value);
+		}
+	}
 	if (ImGui::TreeNode("Advanced Position PRO")) {
 		if (node->getParent()) {
 			const auto pos = node->getParent()->convertToWorldSpace(node->getPosition());
@@ -95,7 +102,7 @@ void render_node_properties(CCNode* node) {
 		ImGui::DragFloat("Scale", &value, 0.05f);
 		if (value != node->getScale()) node->setScale(value);
 	}
-	if (auto item = dynamic_cast<CCMenuItemSprite*>(node)) {
+	if (auto item = dynamic_cast<CCMenuItem*>(node)) {
 		auto thing = format_addr(union_cast<void*>(item->getSelector())).c_str();
 		ImGui::Text("CCMenuItem selector: %s", thing);
 		ImGui::SameLine();
