@@ -162,7 +162,7 @@ matdash::cc::c_decl<cocos2d::extension::RGBA> cocos_hsv2rgb(cocos2d::extension::
 }
 
 void mod_main(HMODULE) {
-	static Console console;
+	//static Console console;
 	std::cout << std::boolalpha;
 
 	state().load();
