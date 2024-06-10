@@ -17,6 +17,7 @@ add_library(${PROJECT_NAME} SHARED
   src/hooks/PlayLayer.cpp
   src/hooks/PlayerObject.cpp
   src/hooks/EditorUI.cpp
+  src/hooks/GJGarageLayer.cpp
   libraries/nfd/src/nfd_common.c
   libraries/nfd/src/nfd_win.cpp
 )

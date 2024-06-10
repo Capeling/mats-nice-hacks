@@ -134,6 +134,10 @@ cc::thiscall<void> PlayLayer::update_(float dt) {
 		this->player2()->setVisible(false);
 	}
 
+	if (state().hide_attempts) {
+		this->attemptsLabel()->setVisible(false);
+	}
+
 	time_t currentTick = time::getTime();
 	labels->m_clickFrames.erase(std::remove_if(labels->m_clickFrames.begin(), labels->m_clickFrames.end(), [currentTick](float tick) {
 		return currentTick - tick > 1000;

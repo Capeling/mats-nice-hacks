@@ -83,7 +83,8 @@ namespace gd {
 		Cube = 1,
 		Ship = 2,
 		Ball = 3,
-		UFO = 4
+		UFO = 4,
+		Special = 99
 	};
 
 	class GameRateDelegate;
@@ -254,7 +255,35 @@ namespace gd {
 		}
 	};
 
-	class CCMenuItemToggler;
+	class CCMenuItemToggler : public CCMenuItem {
+	public:
+		CCMenuItemSpriteExtra* m_pOnButton;
+		CCMenuItemSpriteExtra* m_pOffButton;
+		bool m_bOn;
+		bool m_bNotClickable;
+
+	public:
+		static CCMenuItemToggler* create(cocos2d::CCNode* off, cocos2d::CCNode* on,
+			cocos2d::CCObject* target, cocos2d::SEL_MenuHandler callback) {
+			auto pRet = reinterpret_cast<CCMenuItemToggler * (__fastcall*)(cocos2d::CCNode*,
+				cocos2d::CCNode*, cocos2d::CCObject*, cocos2d::SEL_MenuHandler)>(
+					base + 0xd720 //0x19600 GD 2.1
+					)(off, on, target, callback);
+			__asm add esp, 0x8
+			return pRet;
+		}
+		void setSizeMult(float mult) {
+			reinterpret_cast<void(__thiscall*)(CCMenuItemToggler*, float)>(base + 0xda70)(this, mult);
+		}
+		//my own function
+		inline bool isOn() { return m_bOn; }
+
+		void toggle(bool on) {
+			return reinterpret_cast<void(__thiscall*)(CCMenuItemToggler*, bool)>(
+				base + 0xda70 //0x199B0
+				)(this, on);
+		}
+	};
 
 	class UndoObject;
 
@@ -372,7 +401,46 @@ namespace gd {
 		Saved = 3
 	};
 
-	class GJGarageLayer;
+
+	class GJGarageLayer : public CCLayer {
+	public:
+		CCMenuItemToggler* getCubeBtn() {
+			return from<CCMenuItemToggler*>(this, 0x15c);
+		}
+
+		CCMenuItemToggler* getShipBtn() {
+			return from<CCMenuItemToggler*>(this, 0x160);
+		}
+
+		CCMenuItemToggler* getBallBtn() {
+			return from<CCMenuItemToggler*>(this, 0x164);
+		}
+
+		CCMenuItemToggler* getBirdBtn() {
+			return from<CCMenuItemToggler*>(this, 0x168);
+		}
+
+		CCMenuItemToggler* getSpecialBtn() {
+			return from<CCMenuItemToggler*>(this, 0x16c);
+		}
+
+		CCArray* getGaragePageArray() {
+			return from<CCArray*>(this, 0x150);
+		}
+		void onSelectTab(CCObject* sender) {
+			reinterpret_cast<void (__thiscall*)(GJGarageLayer*, CCObject*)>(base + 0x7de50)(this, sender);
+		}
+		void onBallIcon(CCObject* sender) {
+			reinterpret_cast<void (__thiscall*)(GJGarageLayer*, CCObject*)>(base + 0x7e190)(this, sender);
+		}
+	};
+
+	class GaragePage {
+	public:
+		static auto create(IconType p0, gd::GJGarageLayer* p1, cocos2d::SEL_MenuHandler p2) {
+			return reinterpret_cast<GaragePage * (__fastcall*)(IconType, GJGarageLayer*, SEL_MenuHandler)>(base + 0x7fc90)(p0, p1, p2);
+		}
+	};
 
 	class GJGameLevel : public CCNode {
 	public:

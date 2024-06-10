@@ -21,6 +21,8 @@
 #include "hooks/PlayerObject.hpp"
 #include "hooks/PlayLayer.hpp"
 #include "hooks/EditorUI.hpp"
+#include "hooks/GJGarageLayer.hpp"
+#include "Icons.hpp"
 
 #include <cmath>
 #undef isnan
@@ -161,6 +163,70 @@ matdash::cc::c_decl<cocos2d::extension::RGBA> cocos_hsv2rgb(cocos2d::extension::
 	return orig<&cocos_hsv2rgb>(color);
 }
 
+int getCount(std::string startLabel, std::string end) { // taken from https://github.com/Alphalaneous/ExtraIcons/blob/main/src/main.cpp
+
+	int count = 1;
+	while (true) {
+
+		std::stringstream number;
+		number << std::setw(2) << std::setfill('0') << count;
+
+		if (CCSprite::createWithSpriteFrameName((startLabel + "_" + number.str() + "_" + end + ".png").c_str())) {
+			count++;
+		}
+		else {
+			break;
+		}
+	}
+	std::cout << startLabel << ": " << count - 1 << "\n";
+	return count - 1;
+}
+
+bool MenuLayer_init(gd::MenuLayer* self) {
+	if (!orig<&MenuLayer_init>(self))
+		return false;
+
+	Icons::patchCube(getCount("player", "001"));
+	Icons::patchShip(getCount("ship", "001"));
+	Icons::patchBall(getCount("player_ball", "001"));
+	Icons::patchBird(getCount("bird", "001"));
+
+	return true;
+}
+
+bool GameManager_isIconUnlocked(gd::GameManager* self, int id, int type) {
+	switch (type) {
+	case 0: if (id > 48) return true; break;
+	case 1: if (id > 18) return true; break;
+	case 2: if (id > 10) return true; break;
+	case 3: if (id > 10) return true; break;
+	}
+	return orig<&GameManager_isIconUnlocked>(self, id, type);
+}
+
+void getCreateBtn() {
+	return reinterpret_cast<void(__fastcall*)()>(gd::base + 0x47200)();
+}
+
+void objectAdd(int id)
+{
+	__asm {
+		push ecx
+		push 0x4
+		push id
+		mov ecx, ebx
+		call getCreateBtn
+		push eax
+		mov ecx, esi
+		call edi
+	}
+}
+
+void ObjectToolboxAdd_OrbTab() { //adds secret coin to the editor xd
+	objectAdd(0x8e);
+	orig<&ObjectToolboxAdd_OrbTab>();
+}
+
 void mod_main(HMODULE) {
 	//static Console console;
 	std::cout << std::boolalpha;
@@ -180,7 +246,7 @@ void mod_main(HMODULE) {
 	auto cocos_ext = GetModuleHandleA("libExtensions.dll");
 	add_hook<&FMOD_setVolume>(GetProcAddress(gd::FMOD::base, "?setVolume@ChannelControl@FMOD@@QAG?AW4FMOD_RESULT@@M@Z"));
 	add_hook<&CCKeyboardDispatcher_dispatchKeyboardMSG>(GetProcAddress(cocos, "?dispatchKeyboardMSG@CCKeyboardDispatcher@cocos2d@@QAE_NW4enumKeyCodes@2@_N@Z"));
-	// add_hook<&MenuLayer_init>(base + 0xaf210);
+	add_hook<&MenuLayer_init>(gd::base + 0xaf210);
 
 	// for freeze fix (thx cos8o)
 
@@ -197,6 +263,10 @@ void mod_main(HMODULE) {
 
 	add_hook<&CustomizeObjectLayer_init>(gd::base + 0x2dc70);
 
+	add_hook<&GameManager_isIconUnlocked>(gd::base + 0x66b10);
+
+	//add_hook<&ObjectToolboxAdd_OrbTab>(gd::base + 0x45d08);
+
 	//add_hook<&LevelTools_getAudioTitle>(base + 0xa9ad0);
 	//add_hook<&LevelTools_getLevel>(base + 0xa9280);
 
@@ -206,6 +276,7 @@ void mod_main(HMODULE) {
 
 	preview_mode::init();
 	PlayLayer::initHooks();
+	GJGarageLayer::initHooks();
 	PlayerObject::initHooks();
 	EditorUI::initHooks();
 	// save_file::init();

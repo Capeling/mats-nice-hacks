@@ -6,6 +6,7 @@
 #include "utils.hpp"
 #include "gd.hpp"
 #include "explorer.hpp"
+#include "Icons.hpp"
 
 void update_speed_hack() {
 	const auto value = state().speed_hack_enabled ? state().speed : 1.f;
@@ -174,6 +175,25 @@ void imgui_render() {
 				ImGui::Checkbox("Attempts label", &state().attempts_label);
 				ImGui::TreePop();
 			}
+			/*if (ImGui::TreeNode("Extra Icons")) {
+				ImGui::SetNextItemWidth(60);
+				if(ImGui::DragInt("Cube Amount", &state().cube_amount, 1.f, 1, 1000)) {
+					Icons::patchCube();
+				}
+				ImGui::SetNextItemWidth(60);
+				if (ImGui::DragInt("Ship Amount", &state().ship_amount, 1.f, 1, 1000)) {
+					Icons::patchShip();
+				}
+				ImGui::SetNextItemWidth(60);
+				if (ImGui::DragInt("Ball Amount", &state().ball_amount, 1.f, 1, 1000)) {
+					Icons::patchBall();
+				}
+				ImGui::SetNextItemWidth(60);
+				if (ImGui::DragInt("UFO Amount", &state().bird_amount, 1.f, 1, 1000)) {
+					Icons::patchBird();
+				}
+				ImGui::TreePop();
+			}*/
 		}
 		ImGui::End();
 
