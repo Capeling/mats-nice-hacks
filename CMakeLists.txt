@@ -20,7 +20,7 @@ add_library(${PROJECT_NAME} SHARED
   src/hooks/GJGarageLayer.cpp
   libraries/nfd/src/nfd_common.c
   libraries/nfd/src/nfd_win.cpp
-)
+  )
 
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_20)
 target_compile_definitions(${PROJECT_NAME} PRIVATE NOMINMAX UNICODE _UNICODE)

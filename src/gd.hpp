@@ -80,10 +80,11 @@ namespace gd {
 	class PremiumPopup;
 
 	enum IconType {
-		Cube = 1,
-		Ship = 2,
-		Ball = 3,
-		UFO = 4,
+		Cube = 0,
+		Ship = 1,
+		Ball = 2,
+		UFO = 3,
+		Wave = 4,
 		Special = 99
 	};
 
@@ -138,9 +139,12 @@ namespace gd {
 			return from<int>(this, 0x1bc);
 		}
 
-
 		IconType getPlayerType() {
 			return from<IconType>(this, 0x2b4);
+		}
+
+		void setPlayerType(IconType type) {
+			from<IconType>(this, 0x2b4) = type;
 		}
 
 		cocos2d::ccColor3B colorForIdx(int colorID) {
@@ -229,6 +233,13 @@ namespace gd {
 				(base + 0xd1e0)(sprite, idk, target, callback);
 			__asm add esp, 0x8;
 			return ret;
+		}
+	};
+
+	class ListButtonBar : public CCNode {
+	public:
+		static auto create(cocos2d::CCArray* p0, cocos2d::CCPoint p1, int p2, int p3, float p4, float p5, float p6, float p7, int p8) {
+			return reinterpret_cast<ListButtonBar * (__fastcall*)(cocos2d::CCArray*, cocos2d::CCPoint, int, int, float, float, float, float, int)>(base + 0x19ae0)(p0, p1, p2, p3, p4, p5, p6, p7, p8);
 		}
 	};
 
@@ -401,6 +412,15 @@ namespace gd {
 		Saved = 3
 	};
 
+	class SimplePlayer : public CCSprite {
+		public:
+			static auto create(int frameID) {
+				return reinterpret_cast<SimplePlayer * (__fastcall*)(int)>(base + 0x80770)(frameID);
+			}
+			void updatePlayerFrame(int frameID, IconType iconType) {
+				reinterpret_cast<void(__thiscall*)(SimplePlayer*, int, IconType)>(base + 0x80c70)(this, frameID, iconType);
+			}
+	};
 
 	class GJGarageLayer : public CCLayer {
 	public:
@@ -424,6 +444,10 @@ namespace gd {
 			return from<CCMenuItemToggler*>(this, 0x16c);
 		}
 
+		SimplePlayer* getPlayerIcon() {
+			return from<SimplePlayer*>(this, 0x12c);
+		}
+
 		CCArray* getGaragePageArray() {
 			return from<CCArray*>(this, 0x150);
 		}
@@ -435,10 +459,10 @@ namespace gd {
 		}
 	};
 
-	class GaragePage {
+	class GaragePage : public CCNode {
 	public:
-		static auto create(IconType p0, gd::GJGarageLayer* p1, cocos2d::SEL_MenuHandler p2) {
-			return reinterpret_cast<GaragePage * (__fastcall*)(IconType, GJGarageLayer*, SEL_MenuHandler)>(base + 0x7fc90)(p0, p1, p2);
+		static auto create(IconType p0, GJGarageLayer* p1, cocos2d::SEL_MenuHandler p2) {
+			return reinterpret_cast<GaragePage * (__stdcall*)(IconType, GJGarageLayer*, SEL_MenuHandler)>(base + 0x7fc90)(p0, p1, p2);
 		}
 	};
 

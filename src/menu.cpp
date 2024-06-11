@@ -111,6 +111,7 @@ void imgui_render() {
 				ImGui::TreePop();
 			}
 			if(ImGui::TreeNode("Player")) {
+
 				if (ImGui::Checkbox("No trail", &state().no_trail) || force) {
 					// CCMotionStreak::draw
 					patch_toggle(gd::cocos_base + 0xac080, { 0xc3 }, state().no_trail);
@@ -175,12 +176,12 @@ void imgui_render() {
 				ImGui::Checkbox("Attempts label", &state().attempts_label);
 				ImGui::TreePop();
 			}
-			/*if (ImGui::TreeNode("Extra Icons")) {
-				ImGui::SetNextItemWidth(60);
-				if(ImGui::DragInt("Cube Amount", &state().cube_amount, 1.f, 1, 1000)) {
-					Icons::patchCube();
-				}
-				ImGui::SetNextItemWidth(60);
+			//if (ImGui::TreeNode("Extra Icons")) {
+				//ImGui::SetNextItemWidth(60);
+				//if(ImGui::DragInt("Selected Dart", &state().selected_dart, 1.f, 1, 255)) {
+				//	Icons::patchDart(Icons::getCount("dart", "001"), state().selected_dart);
+				//}
+				/*ImGui::SetNextItemWidth(60);
 				if (ImGui::DragInt("Ship Amount", &state().ship_amount, 1.f, 1, 1000)) {
 					Icons::patchShip();
 				}
@@ -191,9 +192,9 @@ void imgui_render() {
 				ImGui::SetNextItemWidth(60);
 				if (ImGui::DragInt("UFO Amount", &state().bird_amount, 1.f, 1, 1000)) {
 					Icons::patchBird();
-				}
-				ImGui::TreePop();
-			}*/
+				}*/
+				//ImGui::TreePop();
+			//}
 		}
 		ImGui::End();
 

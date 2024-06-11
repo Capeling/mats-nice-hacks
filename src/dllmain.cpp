@@ -163,33 +163,15 @@ matdash::cc::c_decl<cocos2d::extension::RGBA> cocos_hsv2rgb(cocos2d::extension::
 	return orig<&cocos_hsv2rgb>(color);
 }
 
-int getCount(std::string startLabel, std::string end) { // taken from https://github.com/Alphalaneous/ExtraIcons/blob/main/src/main.cpp
-
-	int count = 1;
-	while (true) {
-
-		std::stringstream number;
-		number << std::setw(2) << std::setfill('0') << count;
-
-		if (CCSprite::createWithSpriteFrameName((startLabel + "_" + number.str() + "_" + end + ".png").c_str())) {
-			count++;
-		}
-		else {
-			break;
-		}
-	}
-	std::cout << startLabel << ": " << count - 1 << "\n";
-	return count - 1;
-}
-
 bool MenuLayer_init(gd::MenuLayer* self) {
 	if (!orig<&MenuLayer_init>(self))
 		return false;
 
-	Icons::patchCube(getCount("player", "001"));
-	Icons::patchShip(getCount("ship", "001"));
-	Icons::patchBall(getCount("player_ball", "001"));
-	Icons::patchBird(getCount("bird", "001"));
+	Icons::patchCube(Icons::getCount("player", "001"));
+	Icons::patchShip(Icons::getCount("ship", "001"));
+	Icons::patchBall(Icons::getCount("player_ball", "001"));
+	Icons::patchBird(Icons::getCount("bird", "001"));
+	Icons::patchDart(Icons::getCount("dart", "001"), state().selected_dart);
 
 	return true;
 }
@@ -227,6 +209,11 @@ void ObjectToolboxAdd_OrbTab() { //adds secret coin to the editor xd
 	orig<&ObjectToolboxAdd_OrbTab>();
 }
 
+bool ListButtonBar_create(gd::ListButtonBar* self, cocos2d::CCArray* p0, cocos2d::CCPoint p1, int p2, int p3, float p4, float p5, float p6, float p7, int p8) {
+	//gd::FLAlertLayer::create(nullptr, "test", CCString::createWithFormat("{%i,%i}, %i, %i, %i, %i, %i, %i, %i", p1.x, p1.y, p2, p3, p4, p5, p6, p7, p8)->getCString(), "ok", nullptr, 350, false, 100)->show();
+	return orig<&ListButtonBar_create>(self, p0, p1, p2, p3, p4, p5, p6, p7, p8);
+}
+
 void mod_main(HMODULE) {
 	//static Console console;
 	std::cout << std::boolalpha;
@@ -257,6 +244,8 @@ void mod_main(HMODULE) {
 
 	add_hook<&EditorPauseLayer_customSetup>(gd::base + 0x3e3d0);
 
+	add_hook<&ListButtonBar_create>(gd::base + 0x19bf0);
+
 
 	add_hook<&LevelInfoLayer_onClone>(gd::base + 0x9e2c0);
 	add_hook<&EditLevelLayer_onClone>(gd::base + 0x3da30);
@@ -273,6 +262,7 @@ void mod_main(HMODULE) {
 	add_hook<&cocos_hsv2rgb>(GetProcAddress(cocos_ext, "?RGBfromHSV@CCControlUtils@extension@cocos2d@@SA?AURGBA@23@UHSV@23@@Z"));
 
 	add_hook<&MenuLayer_onMoreGames>(gd::base + 0xb0070);
+
 
 	preview_mode::init();
 	PlayLayer::initHooks();

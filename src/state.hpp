@@ -53,6 +53,8 @@ struct StateStruct {
 	bool cps_prefix = false;
 	bool cps_total = false;
 
+	int selected_dart = 1;
+
 	bool preview_mode = false;
 	// fixes the piss yellow color u get sometimes
 	// its a 1.9 bug thats fixed in 2.1 however
@@ -72,4 +74,5 @@ DEF_SCHEMA(StateStruct, speed, has_retry_keybind,
 	hide_practice, show_percent, verify_hack,
 	hide_attempts, edit_level, hide_trigger_lines, hide_grid, rainbow_color, rainbow_speed, use_mini_icon, no_mini_icon,
 	fps_label, attempts_label, cps_label, cps_prefix, cps_total, fps_prefix, best_run, status_scale, no_death_effect, message, message_text, status_opacity,
-	smooth_editor_trail, always_fix_hue)
+	smooth_editor_trail, always_fix_hue,
+	selected_dart)
