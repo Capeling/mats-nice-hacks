@@ -62,6 +62,8 @@ struct StateStruct {
 	bool should_fix_hue = false;
 	bool always_fix_hue = false;
 
+	bool no_char_limit = false;
+
 	void load();
 	void save();
 };
@@ -75,4 +77,4 @@ DEF_SCHEMA(StateStruct, speed, has_retry_keybind,
 	hide_attempts, edit_level, hide_trigger_lines, hide_grid, rainbow_color, rainbow_speed, use_mini_icon, no_mini_icon,
 	fps_label, attempts_label, cps_label, cps_prefix, cps_total, fps_prefix, best_run, status_scale, no_death_effect, message, message_text, status_opacity,
 	smooth_editor_trail, always_fix_hue,
-	selected_dart)
+	selected_dart, no_char_limit)

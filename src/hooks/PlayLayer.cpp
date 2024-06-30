@@ -47,16 +47,28 @@ bool PlayLayer::init_(gd::GJGameLevel* level) {
 	labels = Labels::create();
 	if (!orig<&PlayLayer::init_>(this, level)) return false;
 
-	auto director = CCDirector::sharedDirector();
-	auto winSize = director->getWinSize();
-
 	labels->m_labelMenu = CCMenu::create();
 	labels->m_labelMenu->setZOrder(999999);
+
+	for (size_t i = 0; i < 5; i++) {
+
+		auto label = labels->createStandardLabel();
+
+		labels->m_labelMenu->addChild(label);
+		labels->m_labels.push_back(label);
+
+		std::cout << labels->m_labels.size() << std::endl;
+	}
+
+	auto director = CCDirector::sharedDirector();
+	auto winSize = director->getWinSize();
 
 	this->addChild(labels->m_labelMenu);
 
 	labels->updateLabels(this);
 	labels->updateLabelPositions();
+	labels->updateBestRunLabel(this);
+	labels->updateAttemptLabel(this);
 
 	if (state().show_percent) {
 		auto gm = gd::GameManager::sharedState();

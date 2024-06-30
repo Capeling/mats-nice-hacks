@@ -75,9 +75,61 @@ namespace gd {
 		}
 	};
 
+	class UILayer : public CCLayerColor {
+
+	};
+
 	class PlayLayer;
 
+	class TextInputDelegate;
+
 	class PremiumPopup;
+
+	class CCTextInputNode : public cocos2d::CCLayer, public cocos2d::CCIMEDelegate, public cocos2d::CCTextFieldDelegate {
+	public:
+		virtual void visit() {}
+		virtual bool ccTouchBegan(cocos2d::CCTouch*, cocos2d::CCEvent*) {}
+		virtual void ccTouchMoved(cocos2d::CCTouch*, cocos2d::CCEvent*) {}
+		virtual void ccTouchEnded(cocos2d::CCTouch*, cocos2d::CCEvent*) {}
+		virtual void ccTouchCancelled(cocos2d::CCTouch*, cocos2d::CCEvent*) {}
+		virtual void registerWithTouchDispatcher() {}
+		virtual void textChanged() {}
+		virtual void onClickTrackNode(bool) {}
+		virtual void keyboardWillShow(cocos2d::CCIMEKeyboardNotificationInfo&) {}
+		virtual void keyboardWillHide(cocos2d::CCIMEKeyboardNotificationInfo&) {}
+		virtual bool onTextFieldInsertText(cocos2d::CCTextFieldTTF*, char const*, int) {}
+		virtual bool onTextFieldAttachWithIME(cocos2d::CCTextFieldTTF*) {}
+		virtual bool onTextFieldDetachWithIME(cocos2d::CCTextFieldTTF*) {}
+		virtual cocos2d::CCTextFieldTTF* getTextField() const {}
+		virtual TextInputDelegate* getDelegate() const {}
+		virtual void setDelegate(TextInputDelegate*) {}
+		virtual int getCharLimit() const {}
+		virtual void setCharLimit(int) {}
+		virtual cocos2d::CCLabelBMFont* getLabel() const {}
+		virtual bool getProfanityFilter() const {}
+		virtual void setProfanityFilter(bool) {}
+		virtual bool getIsPassword() const {}
+		virtual void setIsPassword(bool) {}
+
+		gd::string m_caption;
+		int m_unknown1;
+		bool m_selected;
+		bool m_keyboardPresent;
+		gd::string m_allowedChars;
+		float m_maxLabelWidth;
+		float m_maxLabelScale;
+		float m_placeholderScale; // m_labelPlaceholderScale
+		cocos2d::ccColor3B m_placeholderColor; // m_labelPlaceholderColor
+		cocos2d::ccColor3B m_textColor; // m_labelNormalColor
+		cocos2d::CCLabelBMFont* m_cursor;
+		cocos2d::CCTextFieldTTF* m_textField;
+		TextInputDelegate* m_delegate;
+		int m_maxLabelLength; // m_charLimit
+		cocos2d::CCLabelBMFont* m_placeholderLabel;
+		bool m_filterSwearWords; // m_profanityFilter
+		bool m_usePasswordChar; // m_isPassword
+		bool m_forceOffset;
+	};
 
 	enum IconType {
 		Cube = 0,
@@ -419,6 +471,12 @@ namespace gd {
 			}
 			void updatePlayerFrame(int frameID, IconType iconType) {
 				reinterpret_cast<void(__thiscall*)(SimplePlayer*, int, IconType)>(base + 0x80c70)(this, frameID, iconType);
+			}
+			auto baseSpr() {
+				return from<CCSprite*>(this, 0x1b8);
+			}
+			auto colorSpr() {
+				return from<CCSprite*>(this, 0x1bc);
 			}
 	};
 

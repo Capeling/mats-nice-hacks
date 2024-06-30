@@ -352,3 +352,19 @@ struct cocos {
 		return nullptr;
 	}
 };
+
+struct patchHelp {
+public:
+	static void patch_toggle(uintptr_t addr, const std::vector<uint8_t>& bytes, bool replace) {
+		static std::unordered_map<uintptr_t, uint8_t*> values;
+		if (values.find(addr) == values.end()) {
+			auto data = new uint8_t[bytes.size()];
+			memcpy(data, reinterpret_cast<void*>(addr), bytes.size());
+			values[addr] = data;
+		}
+		DWORD old_prot;
+		VirtualProtect(reinterpret_cast<void*>(addr), bytes.size(), PAGE_EXECUTE_READWRITE, &old_prot);
+		memcpy(reinterpret_cast<void*>(addr), replace ? bytes.data() : values[addr], bytes.size());
+		VirtualProtect(reinterpret_cast<void*>(addr), bytes.size(), old_prot, &old_prot);
+	}
+};

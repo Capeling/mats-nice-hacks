@@ -22,6 +22,7 @@
 #include "hooks/PlayLayer.hpp"
 #include "hooks/EditorUI.hpp"
 #include "hooks/GJGarageLayer.hpp"
+#include "hooks/SimplePlayer.hpp"
 #include "Icons.hpp"
 
 #include <cmath>
@@ -214,6 +215,14 @@ bool ListButtonBar_create(gd::ListButtonBar* self, cocos2d::CCArray* p0, cocos2d
 	return orig<&ListButtonBar_create>(self, p0, p1, p2, p3, p4, p5, p6, p7, p8);
 }
 
+void CCTextInputNode_refreshLabel(gd::CCTextInputNode* self) {
+	if(state().no_char_limit)
+		self->m_maxLabelLength = 99999;
+
+	//self->m_allowedChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890!@#$%^&*()_-=+[]{}\|;:'\",<.>/?`~ ";
+	orig<&CCTextInputNode_refreshLabel>(self);
+}
+
 void mod_main(HMODULE) {
 	//static Console console;
 	std::cout << std::boolalpha;
@@ -257,11 +266,14 @@ void mod_main(HMODULE) {
 	//add_hook<&ObjectToolboxAdd_OrbTab>(gd::base + 0x45d08);
 
 	//add_hook<&LevelTools_getAudioTitle>(base + 0xa9ad0);
+	
 	//add_hook<&LevelTools_getLevel>(base + 0xa9280);
+
+	add_hook<&CCTextInputNode_refreshLabel>(gd::base + 0x14030);
 
 	add_hook<&cocos_hsv2rgb>(GetProcAddress(cocos_ext, "?RGBfromHSV@CCControlUtils@extension@cocos2d@@SA?AURGBA@23@UHSV@23@@Z"));
 
-	add_hook<&MenuLayer_onMoreGames>(gd::base + 0xb0070);
+	//add_hook<&MenuLayer_onMoreGames>(gd::base + 0xb0070);
 
 
 	preview_mode::init();
@@ -269,6 +281,7 @@ void mod_main(HMODULE) {
 	GJGarageLayer::initHooks();
 	PlayerObject::initHooks();
 	EditorUI::initHooks();
+	//SimplePlayer::initHooks();
 	// save_file::init();
 	lvl_share::init();
 
@@ -282,6 +295,31 @@ void mod_main(HMODULE) {
 	patch(gd::base + 0x477b9, { 0xeb });
 
 	patch(gd::base + 0x4b445, { 0xeb, 0x44 });
+
+	patchHelp::patch_toggle(gd::cocos_base + 0xb77f0, { 0xc3 }, state().no_particles);
+
+	patchHelp::patch_toggle(gd::base + 0x9c7ed, { 0x90, 0x90, 0x90, 0x90, 0x90, 0x90 }, state().copy_hack);
+	patchHelp::patch_toggle(gd::base + 0x9dfe5, { 0x90, 0x90 }, state().copy_hack);
+
+	patchHelp::patch_toggle(gd::base + 0xd62ef, { 0x90, 0x90 }, state().edit_level);
+
+	patchHelp::patch_toggle(gd::base + 0x3d760, { 0xeb }, state().verify_hack);
+
+	patchHelp::patch_toggle(gd::base + 0xfee29, { 0x83, 0xc4, 0x04, 0x90, 0x90, 0x90 }, state().hide_practice);
+	patchHelp::patch_toggle(gd::base + 0xfee6a, { 0x83, 0xc4, 0x04, 0x90, 0x90, 0x90 }, state().hide_practice);
+
+	patchHelp::patch_toggle(gd::cocos_base + 0xac080, { 0xc3 }, state().no_trail);
+
+	patchHelp::patch_toggle(gd::base + 0xe0d54, { 0xeb }, state().no_wave_trail);
+
+	patchHelp::patch_toggle(gd::base + 0xd9ade, { 0x90, 0x90 }, state().solid_wave_trail);
+
+	patchHelp::patch_toggle(gd::base + 0x93e08, { 0xE9, 0xCE, 0x00, 0x00, 0x00, 0x90 }, state().hide_trigger_lines);
+
+	patchHelp::patch_toggle(gd::base + 0x938a0, { 0xe9, 0x5a, 0x01, 0x00, 0x00, 0x90 }, state().hide_grid);
+	patchHelp::patch_toggle(gd::base + 0x93a4a, { 0xe9, 0x54, 0x01, 0x00, 0x00, 0x90 }, state().hide_grid);
+
+	patchHelp::patch_toggle(gd::base + 0x91a34, { 0x90, 0x90 }, state().smooth_editor_trail);
 
 	//patch(base + 0xf05d0, { 0x90, 0x90, 0x90, 0x90, 0x90 });
 	//patch(base + 0xf05f4, { 0x90, 0x90, 0x90, 0x90, 0x90 });

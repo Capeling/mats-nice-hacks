@@ -18,9 +18,10 @@ add_library(${PROJECT_NAME} SHARED
   src/hooks/PlayerObject.cpp
   src/hooks/EditorUI.cpp
   src/hooks/GJGarageLayer.cpp
+  src/hooks/UILayer.cpp
   libraries/nfd/src/nfd_common.c
   libraries/nfd/src/nfd_win.cpp
-  )
+   "src/StartposSwitcher.hpp")
 
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_20)
 target_compile_definitions(${PROJECT_NAME} PRIVATE NOMINMAX UNICODE _UNICODE)
